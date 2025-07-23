@@ -27,6 +27,8 @@ class CocoInstanceDataset(CocoDetection):
         """
         super(CocoInstanceDataset, self).__init__(img_folder, ann_file)
         self._transforms = transforms
+        # 过滤掉没有目标的图片
+        self.ids = [img_id for img_id in self.ids if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
 
     def __getitem__(self, idx):
         """

@@ -38,7 +38,7 @@ def parse_args():
                        help='验证标注文件路径')
     
     # ==================== 【模型相关参数】 ====================
-    parser.add_argument('--num-classes', default=2, type=int,
+    parser.add_argument('--num-classes', default=81, type=int,
                        help='类别数量（包括背景类） (默认: 2)')
     parser.add_argument('--pretrained', action='store_true', default=True,
                        help='是否使用预训练权重 (默认: True)')
@@ -210,7 +210,7 @@ def main(args):
     
     for epoch in range(start_epoch, args.epochs):
         print(f"\n========== Epoch {epoch+1}/{args.epochs} ==========")
-        
+        print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
         # 【单轮训练】训练一个epoch
         train_one_epoch(
             model, 

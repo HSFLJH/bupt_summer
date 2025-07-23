@@ -1,0 +1,22 @@
+{
+    // 使用VSCode调试PyTorch训练脚本的配置
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "mask rcnn torchvision train训练",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/mask r-cnn/torchvision/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "3"
+            },
+            "args": [
+                // 这里可以添加训练参数，例如：
+                // "--batch-size", "2",
+                // "--epochs", "5"
+            ]
+        }
+    ]
+}
