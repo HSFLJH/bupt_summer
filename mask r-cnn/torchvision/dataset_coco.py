@@ -4,6 +4,7 @@ import torch
 import torchvision
 from torchvision.datasets import CocoDetection
 from torchvision.transforms import functional as F
+import numpy as np
 
 class CocoInstanceDataset(CocoDetection):
     """
@@ -67,9 +68,9 @@ class CocoInstanceDataset(CocoDetection):
                 masks.append(mask)
 
         # 4. 【张量转换】将列表转换为PyTorch张量
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        labels = torch.as_tensor(labels, dtype=torch.int64)
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
+        boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
+        labels = torch.as_tensor(np.array(labels), dtype=torch.int64)
+        masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
 
         # 5. 【目标字典组装】按照Mask R-CNN要求的格式组织数据
         target = {

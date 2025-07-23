@@ -26,7 +26,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Mask R-CNN训练脚本 - 支持自定义参数配置')
     
     # ==================== 【数据相关参数】 ====================
-    parser.add_argument('--data-path', default='~/data/COCO2017', type=str, 
+    parser.add_argument('--data-path', default='/home/lishengjie/data/COCO2017', type=str, 
                        help='COCO数据集根目录路径 ')
     parser.add_argument('--train-images', default='train2017', type=str,
                        help='训练图像文件夹名称 ')
