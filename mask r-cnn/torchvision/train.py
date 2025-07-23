@@ -19,7 +19,8 @@ from utils import collate_fn, mkdir
 
 log_dir = "./logs"
 os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, "train.log")
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_file = os.path.join(log_dir, f"train_{timestamp}.log")
 
 # 标准输出和错误都重定向到文件和终端
 class Tee(object):
@@ -146,7 +147,7 @@ def main(args):
         print("使用CPU训练")
     
     # 创建输出目录，按时间戳命名
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_dir = os.path.join(args.output_dir, f"maskrcnn_{timestamp}")
     mkdir(output_dir)
     print(f"模型将保存到: {output_dir}")
