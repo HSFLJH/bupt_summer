@@ -14,9 +14,6 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 requests==2.32.4
 six==1.17.0
-torch @ /torch1.13.1%2Bcu117/torch-1.13.1%2Bcu117-cp310-cp310-linux_x86_64.whl#sha256=14c5c9db09df8cf1b3942a3479c779da6e293a84a162d8a6ac71e2bde30e30c5
-torchaudio @ /torch1.13.1%2Bcu117/torchaudio-0.13.1%2Bcu117-cp310-cp310-linux_x86_64.whl#sha256=93f4554a4b53f9698d02224903c923c12a6c22b3c942dcfc2179b581d8f37146
-torchvision @ /torch1.13.1%2Bcu117/torchvision-0.14.1%2Bcu117-cp310-cp310-linux_x86_64.whl#sha256=83d271a530392814b8c7f69382285cac7c7da79b8f5dcc6bcf56c628547bce53
 tqdm==4.67.1
 transforms==0.2.1
 typing_extensions==4.14.1

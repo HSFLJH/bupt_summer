@@ -79,7 +79,7 @@ class CocoInstanceDataset(CocoDetection):
             "boxes": boxes,        # 边界框 [N, 4]
             "labels": labels,      # 类别标签 [N]
             "masks": masks,        # 分割mask [N, H, W]
-            "image_id": torch.tensor([img_id])  # 图像ID
+            "image_id": img_id  # 图像ID，改为int类型
         }
 
         # 6. 【图像预处理】应用图像变换（如果有的话）

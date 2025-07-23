@@ -158,31 +158,36 @@ def evaluate(model, data_loader, device):
     )
     # 遍历每一个batch
     for images, targets in data_iter:
-        # 把图片移动到设备
-        images = list(img.to(device) for img in images)
+        try:
+            # 把图片移动到设备
+            images = list(img.to(device) for img in images)
+            # 如果用GPU，等待同步
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
 
-        # 如果用GPU，等待同步
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        # 记录模型推理开始时间
-        model_time = time.time()
-        # 前向推理，得到预测结果
-        outputs = model(images)
+            # 记录模型推理开始时间
+            model_time = time.time()
+            # 前向推理，得到预测结果
+            outputs = model(images)
 
-        # 把输出转到CPU，便于后续处理
-        outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
-        # 计算推理用时
-        model_time = time.time() - model_time
+            # 把输出转到CPU，便于后续处理
+            outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+            # 计算推理用时
+            model_time = time.time() - model_time
 
-        # 构造image_id到预测结果的映射
-        res = {target["image_id"]: output for target, output in zip(targets, outputs)}
-        # 记录评估器更新时间
-        evaluator_time = time.time()
-        # 更新COCO评估器
-        coco_evaluator.update(res)
-        evaluator_time = time.time() - evaluator_time
-        # 更新指标记录器
-        metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+            # 构造image_id到预测结果的映射
+            res = {target["image_id"]: output for target, output in zip(targets, outputs)}
+            # 记录评估器更新时间
+            evaluator_time = time.time()
+            # 更新COCO评估器
+            coco_evaluator.update(res)
+            evaluator_time = time.time() - evaluator_time
+            # 更新指标记录器
+            metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+
+        except Exception as e:
+            print(f"跳过异常 batch: {e}")
+            continue
 
         # 在tqdm进度条上显示当前平均模型推理时间
         data_iter.set_postfix({
