@@ -93,27 +93,19 @@ class CocoInstanceDataset(CocoDetection):
         return len(self.ids)
 
 
-def get_transform(train=True):
+def get_transform(train=True, data_augmentation="hflip"):
     """
     获取图像预处理变换
     
     参数:
         train: 是否为训练模式
+        data_augmentation: 数据增强策略 ('hflip', 'lsj', 'multiscale', 'ssd', 'ssdlite')
         
     返回:
         训练模式: 包含数据增强的变换组合
         验证模式: 仅包含基础预处理的变换
     """
-    import torchvision.transforms as T
+    from transforms import get_transform as get_detection_transform
     
-    if train:
-        # 【训练时数据增强】
-        return T.Compose([
-            T.ToTensor(),                    # 转换为张量并归一化到[0,1]
-            T.RandomHorizontalFlip(0.5),     # 50%概率水平翻转
-        ])
-    else:
-        # 【验证时基础预处理】
-        return T.Compose([
-            T.ToTensor(),                    # 仅转换为张量
-        ])
+    # 使用新的数据增强预设
+    return get_detection_transform(train=train, data_augmentation=data_augmentation)

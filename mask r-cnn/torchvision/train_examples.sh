@@ -23,6 +23,24 @@ echo "命令: python train.py --batch-size 4 --epochs 10 --lr 0.01"
 echo "说明: 增大批次大小、延长训练轮数、提高学习率"
 echo ""
 
+# ==================== 示例3.1: 使用多尺度数据增强 ====================
+echo "示例3.1: 使用多尺度数据增强"
+echo "命令: python train.py --data-augmentation multiscale --batch-size 4"
+echo "说明: 使用多尺度训练，提高模型泛化能力"
+echo ""
+
+# ==================== 示例3.2: 使用光度变换增强 ====================
+echo "示例3.2: 使用光度变换增强"
+echo "命令: python train.py --data-augmentation photometric --epochs 10"
+echo "说明: 使用亮度、对比度、饱和度变换增强"
+echo ""
+
+# ==================== 示例3.3: 使用所有数据增强策略 ====================
+echo "示例3.3: 使用所有数据增强策略"
+echo "命令: python train.py --data-augmentation all --epochs 15"
+echo "说明: 使用所有可用的数据增强策略，最大化数据多样性"
+echo ""
+
 # ==================== 示例4: 使用GPU并指定输出目录 ====================
 echo "示例4: 指定设备和输出目录"
 echo "命令: python train.py --device cuda --output-dir ./my_models"
@@ -55,9 +73,10 @@ python train.py \
     --device cuda \
     --output-dir ./trained_models \
     --print-freq 20 \
-    --save-freq 5
+    --save-freq 5 \
+    --data-augmentation multiscale
 EOF
-echo "说明: 类似于torchvision官方的完整训练配置"
+echo "说明: 类似于torchvision官方的完整训练配置，使用多尺度数据增强"
 echo ""
 
 # ==================== 示例8: 小数据集快速实验 ====================
@@ -91,6 +110,7 @@ echo "查看所有可用参数: python train.py --help"
 echo ""
 echo "主要参数类别:"
 echo "  数据相关: --data-path, --num-classes, --train-images, --val-images"
+echo "  数据增强: --data-augmentation (hflip/multiscale/photometric/all)"
 echo "  训练相关: --batch-size, --epochs, --lr, --momentum, --weight-decay"  
 echo "  设备相关: --device, --output-dir"
 echo "  其他功能: --resume, --test-only, --save-freq" 

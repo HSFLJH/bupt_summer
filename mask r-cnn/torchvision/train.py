@@ -118,6 +118,8 @@ def parse_args():
                        help='仅进行测试，不训练模型')
     parser.add_argument('--save-freq', default=1, type=int,
                        help='模型保存频率（每多少个epoch保存一次） (默认: 1)')
+    parser.add_argument('--data-augmentation', default='hflip', type=str,
+                       help='数据增强策略 (hflip, lsj, multiscale, ssd, ssdlite) (默认: hflip)')
     
     return parser.parse_args()
 
@@ -162,7 +164,7 @@ def main(args):
     dataset = CocoInstanceDataset(
         img_folder=train_img_folder,                                        # 训练图像路径
         ann_file=train_ann_file,                                           # 训练标注文件
-        transforms=get_transform(train=True),                              # 训练时数据变换（包含数据增强）
+        transforms=get_transform(train=True, data_augmentation=args.data_augmentation),  # 训练时数据变换（包含数据增强）
     )
     print(f"训练集大小: {len(dataset)} 张图像")
     
@@ -173,7 +175,7 @@ def main(args):
     dataset_test = CocoInstanceDataset(
         img_folder=val_img_folder,                                         # 验证图像路径
         ann_file=val_ann_file,                                            # 验证标注文件
-        transforms=get_transform(train=False),                            # 验证时数据变换（无数据增强）
+        transforms=get_transform(train=False, data_augmentation=args.data_augmentation),  # 验证时数据变换（无数据增强）
     )
     print(f"验证集大小: {len(dataset_test)} 张图像")
 

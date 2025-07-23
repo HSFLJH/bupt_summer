@@ -1755,3 +1755,39 @@ Traceback (most recent call last):
   File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torchvision/models/detection/_utils.py", line 216, in decode_single
     c_to_c_h = torch.tensor(0.5, dtype=pred_ctr_y.dtype, device=pred_h.device) * pred_h
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "/root/bupt_summer/mask r-cnn/torchvision/train.py", line 298, in <module>
+    args = parse_args()
+  File "/root/bupt_summer/mask r-cnn/torchvision/train.py", line 91, in parse_args
+    parser.add_argument('--batch-size', default=4, type=int,
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1448, in add_argument
+    return self._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1814, in _add_action
+    self._optionals._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1650, in _add_action
+    action = super(_ArgumentGroup, self)._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1462, in _add_action
+    self._check_conflict(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1599, in _check_conflict
+    conflict_handler(action, confl_optionals)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1608, in _handle_conflict_error
+    raise ArgumentError(action, message % conflict_string)
+argparse.ArgumentError: argument --batch-size: conflicting option string: --batch-size
+Traceback (most recent call last):
+  File "/root/bupt_summer/mask r-cnn/torchvision/train.py", line 298, in <module>
+    args = parse_args()
+  File "/root/bupt_summer/mask r-cnn/torchvision/train.py", line 91, in parse_args
+    parser.add_argument('--batch-size', default=4, type=int,
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1448, in add_argument
+    return self._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1814, in _add_action
+    self._optionals._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1650, in _add_action
+    action = super(_ArgumentGroup, self)._add_action(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1462, in _add_action
+    self._check_conflict(action)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1599, in _check_conflict
+    conflict_handler(action, confl_optionals)
+  File "/root/miniconda3/envs/torch_mask_rcnn/lib/python3.10/argparse.py", line 1608, in _handle_conflict_error
+    raise ArgumentError(action, message % conflict_string)
+argparse.ArgumentError: argument --batch-size: conflicting option string: --batch-size
