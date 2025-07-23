@@ -2,6 +2,7 @@
 # 精简版本，专注于核心训练逻辑，适合学习和快速原型开发
 # 支持命令行参数配置，灵活性更强
 
+import sys
 import os
 import time
 import datetime
@@ -14,6 +15,26 @@ from dataset_coco import CocoInstanceDataset, get_transform
 from model import get_instance_segmentation_model
 from engine import train_one_epoch, evaluate
 from utils import collate_fn, mkdir
+
+
+log_dir = "./logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, "train.log")
+
+# 标准输出和错误都重定向到文件和终端
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush()
+    def flush(self):
+        for f in self.files:
+            f.flush()
+
+sys.stdout = Tee(sys.stdout, open(log_file, "a"))
+sys.stderr = Tee(sys.stderr, open(log_file, "a"))
 
 
 def parse_args():
@@ -44,7 +65,7 @@ def parse_args():
                        help='是否使用预训练权重 (默认: True)')
     
     # ==================== 【训练相关参数】 ====================
-    parser.add_argument('--batch-size', default=8, type=int,
+    parser.add_argument('--batch-size', default=4, type=int,
                        help='批次大小 (默认: 8)')
     parser.add_argument('--epochs', default=3, type=int,
                        help='训练轮数 (默认: 3)')
