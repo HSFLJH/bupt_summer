@@ -38,16 +38,16 @@ def parse_args():
                        help='验证标注文件路径')
     
     # ==================== 【模型相关参数】 ====================
-    parser.add_argument('--num-classes', default=81, type=int,
+    parser.add_argument('--num-classes', default=91, type=int,
                        help='类别数量（包括背景类） (默认: 2)')
     parser.add_argument('--pretrained', action='store_true', default=True,
                        help='是否使用预训练权重 (默认: True)')
     
     # ==================== 【训练相关参数】 ====================
-    parser.add_argument('--batch-size', default=2, type=int,
-                       help='批次大小 (默认: 2)')
-    parser.add_argument('--epochs', default=5, type=int,
-                       help='训练轮数 (默认: 5)')
+    parser.add_argument('--batch-size', default=8, type=int,
+                       help='批次大小 (默认: 8)')
+    parser.add_argument('--epochs', default=3, type=int,
+                       help='训练轮数 (默认: 3)')
     parser.add_argument('--lr', default=0.005, type=float,
                        help='初始学习率 (默认: 0.005)')
     parser.add_argument('--momentum', default=0.9, type=float,
@@ -143,7 +143,7 @@ def main(args):
         batch_size=args.batch_size, 
         sampler=train_sampler, 
         collate_fn=collate_fn,
-        num_workers=4,  # 多进程加载
+        num_workers=8,  # 多进程加载
         pin_memory=True  # 加速GPU传输
     )
     data_loader_test = DataLoader(
