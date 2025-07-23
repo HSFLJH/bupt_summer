@@ -26,7 +26,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Mask R-CNN训练脚本 - 支持自定义参数配置')
     
     # ==================== 【数据相关参数】 ====================
-    parser.add_argument('--data-path', default='/home/lishengjie/data/COCO2017', type=str, 
+    parser.add_argument('--data-path', default='/root/autodl-tmp/COCO', type=str, 
                        help='COCO数据集根目录路径 ')
     parser.add_argument('--train-images', default='train2017', type=str,
                        help='训练图像文件夹名称 ')
@@ -44,8 +44,8 @@ def parse_args():
                        help='是否使用预训练权重 (默认: True)')
     
     # ==================== 【训练相关参数】 ====================
-    parser.add_argument('--batch-size', default=8, type=int,
-                       help='批次大小 (默认: 8)')
+    parser.add_argument('--batch-size', default=4, type=int,
+                       help='批次大小 (默认: 4)')
     parser.add_argument('--epochs', default=3, type=int,
                        help='训练轮数 (默认: 3)')
     parser.add_argument('--lr', default=0.005, type=float,
@@ -225,16 +225,16 @@ def main(args):
         lr_scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
         print(f"当前学习率: {current_lr:.6f}")
-        
-        # 【模型评估】在验证集上评估模型性能
-        print("开始验证...")
-        evaluate(model, data_loader_test, device=device)
 
         # 【模型保存】根据保存频率保存模型权重
         if (epoch + 1) % args.save_freq == 0:
             model_save_path = os.path.join(output_dir, f"model_epoch_{epoch+1}.pth")
             torch.save(model.state_dict(), model_save_path)
-            print(f"模型已保存: {model_save_path}")
+            print(f"模型已保存: {model_save_path}")\
+
+        # 【模型评估】在验证集上评估模型性能
+        print("开始验证...")
+        evaluate(model, data_loader_test, device=device)
 
     # 【最终模型保存】
     final_model_path = os.path.join(output_dir, "model_final.pth")

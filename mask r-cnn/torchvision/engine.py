@@ -47,16 +47,20 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
     )
     # 遍历每一个batch（小批量数据）
     for images, targets in data_iter:
-        # 把所有图片移动到指定设备（如GPU）
-        images = list(image.to(device) for image in images)
-        # 把所有目标（标注）也移动到设备
-        targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
-        # 自动混合精度训练（节省显存，加速）
-        with torch.cuda.amp.autocast(enabled=scaler is not None):
-            # 前向传播，计算损失字典
-            loss_dict = model(images, targets)
-            # 总损失是所有损失项的和
-            losses = sum(loss for loss in loss_dict.values())
+        try:
+            # 把所有图片移动到指定设备（如GPU）
+            images = list(image.to(device) for image in images)
+            # 把所有目标（标注）也移动到设备
+            targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
+            # 自动混合精度训练（节省显存，加速）
+            with torch.cuda.amp.autocast(enabled=scaler is not None):
+                # 前向传播，计算损失字典
+                loss_dict = model(images, targets)
+                # 总损失是所有损失项的和
+                losses = sum(loss for loss in loss_dict.values())
+        except Exception as e:
+            print(f"跳过异常 batch: {e}")
+            continue
 
         # 多卡训练时同步所有GPU的损失
         loss_dict_reduced = utils.reduce_dict(loss_dict)
