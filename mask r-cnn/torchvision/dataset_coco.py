@@ -84,7 +84,7 @@ class CocoInstanceDataset(CocoDetection):
 
         # 6. 【图像预处理】应用图像变换（如果有的话）
         if self._transforms:
-            img = self._transforms(img)
+            img, target = self._transforms(img, target)
 
         return img, target
 
