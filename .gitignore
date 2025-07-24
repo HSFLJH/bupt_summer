@@ -1,1 +1,2 @@
 /pytorch-mask-rcnn/
+*.pth
