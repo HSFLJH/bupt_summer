@@ -1,6 +1,4 @@
 import os
-import sys
-sys.path.append("/root/bupt_summer/mask-r-cnn/pytorch/transforms/")
 
 import torch
 from torch.utils.data import Dataset, DataLoader

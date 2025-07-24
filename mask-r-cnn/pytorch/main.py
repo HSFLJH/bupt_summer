@@ -33,6 +33,8 @@ def parse_args():
                         help='预览数据增强效果')
     parser.add_argument('--num-preview-samples', type=int, default=5,
                         help='预览的样本数量')
+    parser.add_argument('--sample-indices', type=str, default='',
+                        help='指定要预览的样本索引，用逗号分隔，例如"1,2,3"。如果提供此参数，则忽略num-preview-samples')
     
     # 路径
     parser.add_argument('--output-dir', type=str, default='output',
@@ -135,7 +137,15 @@ def main():
     # 如果是增强预览模式，则运行预览并退出
     if args.augmentation_preview:
         print("预览数据增强效果...")
-        preview_augmentations(train_dataset, args.num_preview_samples, config)
+        sample_indices = None
+        if args.sample_indices:
+            try:
+                sample_indices = [int(idx) for idx in args.sample_indices.split(',')]
+                print(f"使用指定的样本索引: {sample_indices}")
+            except ValueError:
+                print("样本索引格式错误，将使用随机样本")
+        
+        preview_augmentations(train_dataset, args.num_preview_samples, config, sample_indices)
         return
     
     # TODO: 加载模型、优化器等

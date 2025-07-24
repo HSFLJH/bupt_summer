@@ -3,8 +3,6 @@ Mask R-CNN的可视化模块
 包含用于可视化图像、边界框和掩码的函数
 """
 import os
-import sys
-sys.path.append("/root/bupt_summer/mask-r-cnn/pytorch/")
 import numpy as np
 import matplotlib 
 # 设置后端为Agg（无界面后端）
@@ -168,12 +166,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.send_response(200)
-            self.send_header('Content-type', 'text/html')
+            self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
             
             # 创建HTML页面，列出所有图像
-            html = '<html><head><title>Mask R-CNN 数据增强可视化</title>'
-            html += '<style>body {font-family: Arial; margin: 20px;} '
+            html = '<html><head><meta charset="UTF-8"><title>Mask R-CNN 数据增强可视化</title>'
+            html += '<style>body {font-family: Arial, "Microsoft YaHei", sans-serif; margin: 20px;} '
             html += 'h1 {color: #333;} '
             html += '.image-container {margin-bottom: 40px; border: 1px solid #ddd; padding: 15px; border-radius: 5px;} '
             html += 'img {max-width: 100%; height: auto; border: 1px solid #eee;} '
@@ -186,7 +184,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                 html += '</div>'
             
             html += '</body></html>'
-            self.wfile.write(html.encode())
+            self.wfile.write(html.encode('utf-8'))
         
         elif self.path.startswith('/image/'):
             image_key = self.path[7:]
@@ -252,7 +250,7 @@ def save_figure_to_cache(fig, key):
     img_str = base64.b64encode(buf.read()).decode('utf-8')
     image_cache[key] = img_str
 
-def preview_augmentations(dataset, num_samples=5, config=None):
+def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=None):
     """
     预览各种数据增强效果
     
@@ -260,6 +258,7 @@ def preview_augmentations(dataset, num_samples=5, config=None):
         dataset: 数据集对象
         num_samples: 要显示的样本数量
         config: 配置对象，包含变换参数
+        sample_indices: 指定的样本索引列表，如果提供则优先使用
     """
     global server_thread, server_instance
     
@@ -276,9 +275,23 @@ def preview_augmentations(dataset, num_samples=5, config=None):
     # 清空图像缓存
     image_cache.clear()
     
-    # 随机选择样本
-    indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
+    # 选择样本
+    if sample_indices is not None:
+        # 使用指定的样本索引
+        indices = [idx for idx in sample_indices if 0 <= idx < len(dataset)]
+        if not indices:  # 如果所有指定的索引都无效
+            print("指定的样本索引无效，将使用随机样本")
+            # 重新设置随机种子，使其基于当前时间
+            random.seed(int(time.time()))
+            indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
+    else:
+        # 重新设置随机种子，使其基于当前时间
+        random.seed(int(time.time()))
+        indices = random.sample(range(len(dataset)), min(num_samples, len(dataset)))
     
+    print(f"\n选择的样本索引: {indices}")
+    
+    # 设置augmentations,即数据增强方式以及参数
     augmentations = {
         "Original": None,
         "Large Scale Jitter": LargeScaleJitter(min_scale=0.3, max_scale=2.0),
@@ -409,3 +422,7 @@ def preview_augmentations(dataset, num_samples=5, config=None):
     
     print(f"\n可视化已准备完毕! 请访问 http://localhost:{server_port}/ 查看结果")
     print("===== 按Ctrl+C可以停止服务器和程序 =====\n") 
+
+    # 睡眠300秒，然后停止服务器
+    time.sleep(300)
+    stop_server()
