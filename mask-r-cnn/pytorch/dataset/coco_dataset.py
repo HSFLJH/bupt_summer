@@ -5,6 +5,7 @@ from torchvision.io import read_image
 import numpy as np
 from pycocotools.coco import COCO
 import torchvision.transforms.functional as F
+from PIL import Image
 from transforms.mask_rcnn_transforms import Compose, build_mask_rcnn_transforms
 
 
@@ -39,9 +40,10 @@ class COCODataset(Dataset):
         img_info = coco.loadImgs(img_id)[0]
         path = img_info['file_name']
 
-        # 使用 read_image 加载图像，输出为 Tensor(C,H,W)，值域为[0,255]
+        # 使用 PIL 加载图像
         img_path = os.path.join(self.root, path)
-        img = read_image(img_path).float() / 255.0  # 转为 [0,1]
+        img = Image.open(img_path).convert('RGB')
+        img = F.to_tensor(img)
 
         # 获取原始尺寸（从 COCO 元数据）
         width = img_info['width']

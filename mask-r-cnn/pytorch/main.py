@@ -148,7 +148,7 @@ def main():
                 print("样本索引格式错误，将使用随机样本")
         
         preview_augmentations(
-            train_dataset, 
+            val_dataset, 
             args.num_preview_samples, 
             config, 
             sample_indices,

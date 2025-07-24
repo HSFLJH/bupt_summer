@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import torchvision.transforms.functional as F
 import torchvision.transforms as T
-from PIL import Image, ImageFilter
 
 class Compose:
     def __init__(self, transforms):
@@ -118,70 +117,52 @@ class ToTensor:
         return image, target
 
 class SmallRotation:
-    """小角度旋转，保持实例完整性"""
+    """小角度旋转，保持实例完整性（纯 tensor 版本）"""
     def __init__(self, angle_range=10, prob=0.3, expand=False):
         self.angle_range = angle_range
         self.prob = prob
-        self.expand = expand  # 是否扩展图像以包含整个旋转后的图像
-    
+        self.expand = expand  # 是否扩展图像尺寸以包含完整旋转图
+        self.interpolation_image = F.InterpolationMode.BILINEAR
+        self.interpolation_mask = F.InterpolationMode.NEAREST
+
     def __call__(self, image, target):
         if random.random() > self.prob:
             return image, target
         
-        # 随机选择角度
         angle = random.uniform(-self.angle_range, self.angle_range)
-        
-        # 保存原始尺寸
-        _, h, w = image.shape
-        
-        # 将tensor转为PIL进行旋转
-        pil_image = F.to_pil_image(image)
-        rotated_pil = pil_image.rotate(angle, expand=self.expand, resample=Image.BILINEAR)
-        
-        # 转回tensor
-        rotated_image = F.to_tensor(rotated_pil)
-        
-        # 处理目标数据
+
+        # Tensor 上旋转图像
+        image = F.rotate(image, angle, interpolation=self.interpolation_image, expand=self.expand)
+
         if 'masks' in target and len(target['masks']) > 0:
             masks = target['masks']
             rotated_masks = []
-            
-            # 旋转每个掩码
             for mask in masks:
-                mask_pil = Image.fromarray(mask.numpy().astype(np.uint8) * 255)
-                rotated_mask = mask_pil.rotate(angle, expand=self.expand, resample=Image.NEAREST)
-                rotated_mask_np = np.array(rotated_mask) > 0
-                rotated_masks.append(torch.tensor(rotated_mask_np, dtype=torch.uint8))
-            
-            if rotated_masks:
-                target['masks'] = torch.stack(rotated_masks)
-                
-                # 从掩码重新计算边界框
-                if 'boxes' in target:
-                    boxes = []
-                    labels = []
-                    areas = []
-                    
-                    for i, mask in enumerate(target['masks']):
-                        pos = torch.where(mask)
-                        if len(pos[0]) > 0 and len(pos[1]) > 0:
-                            y1, y2 = pos[0].min().item(), pos[0].max().item()
-                            x1, x2 = pos[1].min().item(), pos[1].max().item()
-                            
-                            # 确保框有效（不是单点）
-                            if x2 > x1 and y2 > y1:
-                                boxes.append([x1, y1, x2, y2])
-                                labels.append(target['labels'][i].item())
-                                areas.append((y2 - y1) * (x2 - x1))
-                    
-                    if boxes:
-                        target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
-                        target['labels'] = torch.tensor(labels, dtype=torch.int64)
-                        # 更新面积
-                        if 'area' in target:
-                            target['area'] = torch.tensor(areas, dtype=torch.float32)
-        
-        return rotated_image, target
+                rotated = F.rotate(mask.unsqueeze(0), angle, interpolation=self.interpolation_mask, expand=self.expand)
+                rotated_masks.append(rotated.squeeze(0))
+            target['masks'] = torch.stack(rotated_masks)
+
+            # 从掩码重新计算 boxes
+            if 'boxes' in target:
+                boxes = []
+                labels = []
+                areas = []
+                for i, mask in enumerate(target['masks']):
+                    pos = torch.where(mask)
+                    if len(pos[0]) > 0 and len(pos[1]) > 0:
+                        y1, y2 = pos[0].min().item(), pos[0].max().item()
+                        x1, x2 = pos[1].min().item(), pos[1].max().item()
+                        if x2 > x1 and y2 > y1:
+                            boxes.append([x1, y1, x2, y2])
+                            labels.append(target['labels'][i].item())
+                            areas.append((y2 - y1) * (x2 - x1))
+                if boxes:
+                    target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
+                    target['labels'] = torch.tensor(labels, dtype=torch.int64)
+                    if 'area' in target:
+                        target['area'] = torch.tensor(areas, dtype=torch.float32)
+
+        return image, target
 
 class SafeRandomCrop:
     """安全随机裁剪，保证实例的完整性"""
@@ -370,113 +351,65 @@ class MotionBlur:
         return blurred_image, target
 
 class RandomPerspective:
-    """随机透视变换，模拟不同视角"""
+    """随机透视变换，适用于 tensor 图像"""
     def __init__(self, distortion_scale=0.2, prob=0.3):
-        """
-        参数:
-            distortion_scale: 透视变换的强度
-            prob: 应用变换的概率
-        """
         self.distortion_scale = distortion_scale
         self.prob = prob
-    
+        self.interpolation_image = F.InterpolationMode.BILINEAR
+        self.interpolation_mask = F.InterpolationMode.NEAREST
+
     def __call__(self, image, target):
         if random.random() > self.prob:
             return image, target
         
-        # 将tensor转为PIL进行透视变换
-        pil_image = F.to_pil_image(image)
-        
-        # 获取图像尺寸
-        width, height = pil_image.size
-        
-        # 定义扭曲参数
-        half_width = width // 2
-        half_height = height // 2
-        
-        # 计算变换的四个点
-        topleft = [
-            int(random.uniform(0, self.distortion_scale * half_width)),
-            int(random.uniform(0, self.distortion_scale * half_height))
+        _, h, w = image.shape
+
+        # 定义 startpoints：原图四个角
+        startpoints = [
+            [0, 0],             # top-left
+            [w - 1, 0],         # top-right
+            [w - 1, h - 1],     # bottom-right
+            [0, h - 1]          # bottom-left
         ]
-        topright = [
-            int(random.uniform(width - self.distortion_scale * half_width, width)),
-            int(random.uniform(0, self.distortion_scale * half_height))
-        ]
-        botright = [
-            int(random.uniform(width - self.distortion_scale * half_width, width)),
-            int(random.uniform(height - self.distortion_scale * half_height, height))
-        ]
-        botleft = [
-            int(random.uniform(0, self.distortion_scale * half_width)),
-            int(random.uniform(height - self.distortion_scale * half_height, height))
-        ]
-        
-        # 原始图像的四个角点
-        startpoints = [(0, 0), (width - 1, 0), (width - 1, height - 1), (0, height - 1)]
-        endpoints = [tuple(topleft), tuple(topright), tuple(botright), tuple(botleft)]
-        
-        # 计算透视变换矩阵
-        coeffs = F._get_perspective_coeffs(startpoints, endpoints)
-        
-        # 应用透视变换
-        transformed_image = pil_image.transform(
-            (width, height),
-            Image.PERSPECTIVE,
-            coeffs,
-            Image.BILINEAR
-        )
-        
-        # 转回tensor
-        transformed_tensor = F.to_tensor(transformed_image)
-        
-        # 处理目标数据
-        # 对于透视变换，掩码和边界框的处理比较复杂
-        # 这里我们简化处理：对掩码应用相同的透视变换，然后重新计算边界框
+
+        # 计算 endpoints：在 startpoints 附近进行扰动
+        def distort(pt):
+            dx = random.uniform(-self.distortion_scale, self.distortion_scale) * w
+            dy = random.uniform(-self.distortion_scale, self.distortion_scale) * h
+            return [pt[0] + dx, pt[1] + dy]
+
+        endpoints = [distort(pt) for pt in startpoints]
+
+        # 图像透视变换
+        image = F.perspective(image, startpoints, endpoints, interpolation=self.interpolation_image)
+
+        # mask 透视变换
         if 'masks' in target and len(target['masks']) > 0:
-            masks = target['masks']
-            transformed_masks = []
-            
-            for mask in masks:
-                mask_pil = Image.fromarray(mask.numpy().astype(np.uint8) * 255)
-                transformed_mask = mask_pil.transform(
-                    (width, height),
-                    Image.PERSPECTIVE,
-                    coeffs,
-                    Image.NEAREST
-                )
-                transformed_mask_np = np.array(transformed_mask) > 0
-                transformed_masks.append(torch.tensor(transformed_mask_np, dtype=torch.uint8))
-            
-            if transformed_masks:
-                target['masks'] = torch.stack(transformed_masks)
-                
-                # 从掩码重新计算边界框
-                if 'boxes' in target:
-                    boxes = []
-                    labels = []
-                    areas = []
-                    
-                    for i, mask in enumerate(target['masks']):
-                        pos = torch.where(mask)
-                        if len(pos[0]) > 0 and len(pos[1]) > 0:
-                            y1, y2 = pos[0].min().item(), pos[0].max().item()
-                            x1, x2 = pos[1].min().item(), pos[1].max().item()
-                            
-                            # 确保框有效（不是单点）
-                            if x2 > x1 and y2 > y1:
-                                boxes.append([x1, y1, x2, y2])
-                                labels.append(target['labels'][i].item())
-                                areas.append((y2 - y1) * (x2 - x1))
-                    
-                    if boxes:
-                        target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
-                        target['labels'] = torch.tensor(labels, dtype=torch.int64)
-                        # 更新面积
-                        if 'area' in target:
-                            target['area'] = torch.tensor(areas, dtype=torch.float32)
-        
-        return transformed_tensor, target
+            new_masks = []
+            for mask in target['masks']:
+                mask = F.perspective(mask.unsqueeze(0), startpoints, endpoints, interpolation=self.interpolation_mask)
+                new_masks.append(mask.squeeze(0))
+            target['masks'] = torch.stack(new_masks)
+
+            # 从掩码重建 box、labels、area
+            if 'boxes' in target:
+                boxes, labels, areas = [], [], []
+                for i, mask in enumerate(target['masks']):
+                    pos = torch.where(mask)
+                    if len(pos[0]) > 0 and len(pos[1]) > 0:
+                        y1, y2 = pos[0].min().item(), pos[0].max().item()
+                        x1, x2 = pos[1].min().item(), pos[1].max().item()
+                        if x2 > x1 and y2 > y1:
+                            boxes.append([x1, y1, x2, y2])
+                            labels.append(target['labels'][i].item())
+                            areas.append((y2 - y1) * (x2 - x1))
+                if boxes:
+                    target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
+                    target['labels'] = torch.tensor(labels, dtype=torch.int64)
+                    if 'area' in target:
+                        target['area'] = torch.tensor(areas, dtype=torch.float32)
+
+        return image, target
 
 def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333):
     transforms = []
