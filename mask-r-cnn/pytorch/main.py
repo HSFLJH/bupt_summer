@@ -35,6 +35,8 @@ def parse_args():
                         help='预览的样本数量')
     parser.add_argument('--sample-indices', type=str, default='',
                         help='指定要预览的样本索引，用逗号分隔，例如"1,2,3"。如果提供此参数，则忽略num-preview-samples')
+    parser.add_argument('--show-annotations', action='store_true', default=True,
+                        help='是否显示标注（边界框和掩码）')
     
     # 路径
     parser.add_argument('--output-dir', type=str, default='output',
@@ -145,7 +147,13 @@ def main():
             except ValueError:
                 print("样本索引格式错误，将使用随机样本")
         
-        preview_augmentations(train_dataset, args.num_preview_samples, config, sample_indices)
+        preview_augmentations(
+            train_dataset, 
+            args.num_preview_samples, 
+            config, 
+            sample_indices,
+            show_annotations=args.show_annotations
+        )
         return
     
     # TODO: 加载模型、优化器等

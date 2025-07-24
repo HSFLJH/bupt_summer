@@ -1,25 +1,12 @@
-"""
-适合Mask R-CNN的数据增强方法
-包含：
-1. LSJ (Large Scale Jitter) - 大尺度抖动
-2. RandomHorizontalFlip - 随机水平翻转
-3. ColorJitter - 颜色抖动
-4. Grayscale - 随机灰度化
-5. 小角度旋转
-6. 小幅度裁剪（确保实例完整性）
-7. Normalize - 标准化
-"""
-
 import random
 import math
 import numpy as np
 import torch
 import torchvision.transforms.functional as F
-from torchvision import transforms
-from PIL import Image, ImageOps
+import torchvision.transforms as T
+from PIL import Image, ImageFilter
 
 class Compose:
-    """组合多个变换"""
     def __init__(self, transforms):
         self.transforms = transforms
 
@@ -29,109 +16,105 @@ class Compose:
         return image, target
 
 class LargeScaleJitter:
-    """
-    大尺度抖动 (LSJ)
-    参考论文：https://arxiv.org/abs/2106.05237
-    """
     def __init__(self, min_scale=0.1, max_scale=2.0, prob=1.0):
-        """
-        参数:
-            min_scale (float): 最小缩放比例
-            max_scale (float): 最大缩放比例
-            prob (float): 应用此变换的概率
-        """
         self.min_scale = min_scale
         self.max_scale = max_scale
         self.prob = prob
-    
+
     def __call__(self, image, target):
         if random.random() > self.prob:
             return image, target
-        
-        # 获取原始尺寸
-        orig_width, orig_height = image.size
-        
-        # 随机选择缩放因子
-        scale_factor = random.uniform(self.min_scale, self.max_scale)
-        
-        # 新的尺寸
-        new_width = int(orig_width * scale_factor)
-        new_height = int(orig_height * scale_factor)
-        
-        # 缩放图像
-        image = image.resize((new_width, new_height), Image.BILINEAR)
-        
-        # 缩放目标
-        if 'boxes' in target and len(target['boxes']) > 0:
-            boxes = target['boxes'] * scale_factor
-            target['boxes'] = boxes
-            
-            # 更新面积
-            if 'area' in target:
-                target['area'] = target['area'] * (scale_factor * scale_factor)
-        
-        # 缩放掩码
-        if 'masks' in target and len(target['masks']) > 0:
-            masks = target['masks']
-            new_masks = []
-            
-            for mask in masks:
-                mask_pil = Image.fromarray(mask.numpy().astype(np.uint8) * 255)
-                mask_pil = mask_pil.resize((new_width, new_height), Image.NEAREST)
-                mask_np = np.array(mask_pil) > 0
-                new_masks.append(torch.tensor(mask_np, dtype=torch.uint8))
-            
-            if new_masks:
-                target['masks'] = torch.stack(new_masks)
-        
+
+        _, h, w = image.shape
+        scale = random.uniform(self.min_scale, self.max_scale)
+        nh, nw = int(h * scale), int(w * scale)
+
+        image = F.resize(image, [nh, nw])
+
+        if 'boxes' in target:
+            target['boxes'] = target['boxes'] * scale
+        if 'area' in target:
+            target['area'] = target['area'] * (scale ** 2)
+        if 'masks' in target:
+            masks = target['masks'].unsqueeze(1).float()
+            masks = torch.nn.functional.interpolate(masks, size=(nh, nw), mode='nearest')
+            target['masks'] = masks.squeeze(1).byte()
+
         return image, target
 
 class RandomHorizontalFlip:
-    """随机水平翻转"""
     def __init__(self, prob=0.5):
         self.prob = prob
 
     def __call__(self, image, target):
         if random.random() < self.prob:
             image = F.hflip(image)
-            width = image.size[0]
+            _, _, width = image.shape
 
-            if 'boxes' in target and len(target['boxes']) > 0:
-                boxes = target['boxes'].clone()
-                boxes[:, [0, 2]] = width - boxes[:, [2, 0]]  # flip x1 <-> x2
+            if 'boxes' in target:
+                boxes = target['boxes']
+                boxes[:, [0, 2]] = width - boxes[:, [2, 0]]
                 target['boxes'] = boxes
-
-            if 'masks' in target and len(target['masks']) > 0:
-                target['masks'] = target['masks'].flip(-1)  # 水平翻转掩码
+            if 'masks' in target:
+                target['masks'] = target['masks'].flip(-1)
 
         return image, target
 
 class ColorJitterTransform:
-    """颜色抖动变换"""
     def __init__(self, brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, prob=0.8):
-        self.color_jitter = transforms.ColorJitter(
-            brightness=brightness,
-            contrast=contrast,
-            saturation=saturation,
-            hue=hue
-        )
+        self.jitter = T.ColorJitter(brightness, contrast, saturation, hue)
         self.prob = prob
-    
+
     def __call__(self, image, target):
         if random.random() < self.prob:
-            image = self.color_jitter(image)
+            image = self.jitter(image)
         return image, target
 
 class RandomGrayscale:
-    """随机灰度化"""
     def __init__(self, prob=0.1):
         self.prob = prob
-    
+
     def __call__(self, image, target):
         if random.random() < self.prob:
-            image = ImageOps.grayscale(image)
-            # 转换为3通道灰度图
-            image = Image.merge("RGB", [image, image, image])
+            image = T.RandomGrayscale(p=1.0)(image)
+        return image, target
+
+class Normalize:
+    def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, image, target):
+        image = F.normalize(image, mean=self.mean, std=self.std)
+        return image, target
+
+class Resize:
+    def __init__(self, min_size=800, max_size=1333):
+        self.min_size = min_size
+        self.max_size = max_size
+
+    def __call__(self, image, target):
+        _, h, w = image.shape
+        scale = self.min_size / min(h, w)
+        if max(h, w) * scale > self.max_size:
+            scale = self.max_size / max(h, w)
+
+        nh, nw = int(h * scale), int(w * scale)
+        image = F.resize(image, [nh, nw])
+
+        if 'boxes' in target:
+            target['boxes'] = target['boxes'] * scale
+        if 'area' in target:
+            target['area'] = target['area'] * (scale ** 2)
+        if 'masks' in target:
+            masks = target['masks'].unsqueeze(1).float()
+            masks = torch.nn.functional.interpolate(masks, size=(nh, nw), mode='nearest')
+            target['masks'] = masks.squeeze(1).byte()
+
+        return image, target
+
+class ToTensor:
+    def __call__(self, image, target):
         return image, target
 
 class SmallRotation:
@@ -148,8 +131,15 @@ class SmallRotation:
         # 随机选择角度
         angle = random.uniform(-self.angle_range, self.angle_range)
         
-        # 旋转图像
-        rotated_image = image.rotate(angle, expand=self.expand, resample=Image.BILINEAR)
+        # 保存原始尺寸
+        _, h, w = image.shape
+        
+        # 将tensor转为PIL进行旋转
+        pil_image = F.to_pil_image(image)
+        rotated_pil = pil_image.rotate(angle, expand=self.expand, resample=Image.BILINEAR)
+        
+        # 转回tensor
+        rotated_image = F.to_tensor(rotated_pil)
         
         # 处理目标数据
         if 'masks' in target and len(target['masks']) > 0:
@@ -170,24 +160,26 @@ class SmallRotation:
                 if 'boxes' in target:
                     boxes = []
                     labels = []
+                    areas = []
                     
                     for i, mask in enumerate(target['masks']):
                         pos = torch.where(mask)
                         if len(pos[0]) > 0 and len(pos[1]) > 0:
-                            y1, y2 = pos[0].min(), pos[0].max()
-                            x1, x2 = pos[1].min(), pos[1].max()
+                            y1, y2 = pos[0].min().item(), pos[0].max().item()
+                            x1, x2 = pos[1].min().item(), pos[1].max().item()
                             
                             # 确保框有效（不是单点）
                             if x2 > x1 and y2 > y1:
-                                boxes.append([x1.item(), y1.item(), x2.item(), y2.item()])
+                                boxes.append([x1, y1, x2, y2])
                                 labels.append(target['labels'][i].item())
+                                areas.append((y2 - y1) * (x2 - x1))
                     
                     if boxes:
                         target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
                         target['labels'] = torch.tensor(labels, dtype=torch.int64)
                         # 更新面积
                         if 'area' in target:
-                            target['area'] = (target['boxes'][:, 3] - target['boxes'][:, 1]) * (target['boxes'][:, 2] - target['boxes'][:, 0])
+                            target['area'] = torch.tensor(areas, dtype=torch.float32)
         
         return rotated_image, target
 
@@ -208,11 +200,12 @@ class SafeRandomCrop:
         if random.random() > self.prob:
             return image, target
         
-        width, height = image.size
+        # 获取图像尺寸
+        _, h, w = image.shape
         
         # 计算最大裁剪量
-        max_crop_x = int(width * self.max_crop_fraction)
-        max_crop_y = int(height * self.max_crop_fraction)
+        max_crop_x = int(w * self.max_crop_fraction)
+        max_crop_y = int(h * self.max_crop_fraction)
         
         # 随机选择裁剪量
         crop_left = random.randint(0, max_crop_x)
@@ -223,8 +216,8 @@ class SafeRandomCrop:
         # 计算新的裁剪区域
         new_left = crop_left
         new_top = crop_top
-        new_right = width - crop_right
-        new_bottom = height - crop_bottom
+        new_right = w - crop_right
+        new_bottom = h - crop_bottom
         
         # 确保裁剪区域有效
         if new_left >= new_right or new_top >= new_bottom:
@@ -267,7 +260,7 @@ class SafeRandomCrop:
                 return image, target
             
             # 执行裁剪
-            cropped_image = image.crop((new_left, new_top, new_right, new_bottom))
+            cropped_image = image[:, new_top:new_bottom, new_left:new_right]
             
             # 更新标签
             target['boxes'] = torch.tensor(new_boxes, dtype=torch.float32)
@@ -293,114 +286,218 @@ class SafeRandomCrop:
             return cropped_image, target
         
         # 如果没有边界框，直接裁剪
-        cropped_image = image.crop((new_left, new_top, new_right, new_bottom))
+        cropped_image = image[:, new_top:new_bottom, new_left:new_right]
         return cropped_image, target
 
-class Normalize:
-    """标准化图像"""
-    def __init__(self, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
-        self.mean = mean
-        self.std = std
+class MotionBlur:
+    """运动模糊，模拟相机运动或物体运动"""
+    def __init__(self, kernel_size=7, angle_range=180, prob=0.3):
+        """
+        参数:
+            kernel_size: 模糊核大小
+            angle_range: 模糊角度范围(0-180度)
+            prob: 应用模糊的概率
+        """
+        self.kernel_size = kernel_size
+        self.angle_range = angle_range
+        self.prob = prob
     
-    def __call__(self, image, target):
-        # 将PIL图像转换为tensor并标准化
-        if isinstance(image, Image.Image):
-            image = F.to_tensor(image)
+    def _motion_blur_kernel(self, kernel_size, angle):
+        """创建运动模糊核"""
+        kernel = np.zeros((kernel_size, kernel_size))
+        center = kernel_size // 2
         
-        image = F.normalize(image, mean=self.mean, std=self.std)
-        return image, target
-
-class ToTensor:
-    """将PIL图像转换为tensor"""
-    def __call__(self, image, target):
-        if isinstance(image, Image.Image):
-            image = F.to_tensor(image)
-        return image, target
-
-class Resize:
-    """调整图像大小"""
-    def __init__(self, min_size=800, max_size=1333):
-        self.min_size = min_size
-        self.max_size = max_size
-    
-    def __call__(self, image, target):
-        # 获取原始尺寸
-        w, h = image.size
+        # 将角度转换为弧度
+        angle_rad = np.deg2rad(angle)
         
-        # 计算缩放比例
-        scale = self.min_size / min(h, w)
-        if max(h, w) * scale > self.max_size:
-            scale = self.max_size / max(h, w)
+        # 计算直线的方向向量
+        dx = np.cos(angle_rad)
+        dy = np.sin(angle_rad)
         
-        # 新尺寸
-        new_w = int(w * scale)
-        new_h = int(h * scale)
-        
-        # 调整图像大小
-        image = F.resize(image, (new_h, new_w))
-        
-        # 调整边界框
-        if 'boxes' in target and len(target['boxes']) > 0:
-            boxes = target['boxes'] * scale
-            target['boxes'] = boxes
+        # 在核中绘制一条线
+        for i in range(kernel_size):
+            offset = i - center
+            x = center + dx * offset
+            y = center + dy * offset
             
-            # 更新面积
-            if 'area' in target:
-                target['area'] = target['area'] * (scale * scale)
+            # 检查点是否在核内
+            if 0 <= x < kernel_size and 0 <= y < kernel_size:
+                # 双线性插值
+                x0, y0 = int(x), int(y)
+                x1, y1 = min(x0 + 1, kernel_size - 1), min(y0 + 1, kernel_size - 1)
+                
+                # 计算权重
+                wx = x - x0
+                wy = y - y0
+                
+                # 设置值
+                kernel[y0, x0] += (1 - wx) * (1 - wy)
+                kernel[y0, x1] += wx * (1 - wy)
+                kernel[y1, x0] += (1 - wx) * wy
+                kernel[y1, x1] += wx * wy
         
-        # 调整掩码
+        # 归一化核
+        kernel = kernel / kernel.sum()
+        return kernel
+    
+    def __call__(self, image, target):
+        if random.random() > self.prob:
+            return image, target
+        
+        # 随机选择角度
+        angle = random.uniform(0, self.angle_range)
+        
+        # 创建模糊核
+        kernel = self._motion_blur_kernel(self.kernel_size, angle)
+        kernel = torch.FloatTensor(kernel).unsqueeze(0).unsqueeze(0)
+        
+        # 应用模糊
+        # 为每个通道创建卷积核
+        kernel = kernel.repeat(3, 1, 1, 1)
+        
+        # 使用卷积应用模糊
+        padding = self.kernel_size // 2
+        blurred_image = torch.nn.functional.conv2d(
+            image.unsqueeze(0), 
+            kernel, 
+            padding=padding, 
+            groups=3
+        ).squeeze(0)
+        
+        # 确保图像数值在有效范围内
+        blurred_image = torch.clamp(blurred_image, 0, 1)
+        
+        return blurred_image, target
+
+class RandomPerspective:
+    """随机透视变换，模拟不同视角"""
+    def __init__(self, distortion_scale=0.2, prob=0.3):
+        """
+        参数:
+            distortion_scale: 透视变换的强度
+            prob: 应用变换的概率
+        """
+        self.distortion_scale = distortion_scale
+        self.prob = prob
+    
+    def __call__(self, image, target):
+        if random.random() > self.prob:
+            return image, target
+        
+        # 将tensor转为PIL进行透视变换
+        pil_image = F.to_pil_image(image)
+        
+        # 获取图像尺寸
+        width, height = pil_image.size
+        
+        # 定义扭曲参数
+        half_width = width // 2
+        half_height = height // 2
+        
+        # 计算变换的四个点
+        topleft = [
+            int(random.uniform(0, self.distortion_scale * half_width)),
+            int(random.uniform(0, self.distortion_scale * half_height))
+        ]
+        topright = [
+            int(random.uniform(width - self.distortion_scale * half_width, width)),
+            int(random.uniform(0, self.distortion_scale * half_height))
+        ]
+        botright = [
+            int(random.uniform(width - self.distortion_scale * half_width, width)),
+            int(random.uniform(height - self.distortion_scale * half_height, height))
+        ]
+        botleft = [
+            int(random.uniform(0, self.distortion_scale * half_width)),
+            int(random.uniform(height - self.distortion_scale * half_height, height))
+        ]
+        
+        # 原始图像的四个角点
+        startpoints = [(0, 0), (width - 1, 0), (width - 1, height - 1), (0, height - 1)]
+        endpoints = [tuple(topleft), tuple(topright), tuple(botright), tuple(botleft)]
+        
+        # 计算透视变换矩阵
+        coeffs = F._get_perspective_coeffs(startpoints, endpoints)
+        
+        # 应用透视变换
+        transformed_image = pil_image.transform(
+            (width, height),
+            Image.PERSPECTIVE,
+            coeffs,
+            Image.BILINEAR
+        )
+        
+        # 转回tensor
+        transformed_tensor = F.to_tensor(transformed_image)
+        
+        # 处理目标数据
+        # 对于透视变换，掩码和边界框的处理比较复杂
+        # 这里我们简化处理：对掩码应用相同的透视变换，然后重新计算边界框
         if 'masks' in target and len(target['masks']) > 0:
-            masks = target['masks'].unsqueeze(1).float()  # [N, 1, H, W]
-            masks = torch.nn.functional.interpolate(masks, size=(new_h, new_w), mode='nearest')
-            target['masks'] = masks.squeeze(1).byte()
+            masks = target['masks']
+            transformed_masks = []
+            
+            for mask in masks:
+                mask_pil = Image.fromarray(mask.numpy().astype(np.uint8) * 255)
+                transformed_mask = mask_pil.transform(
+                    (width, height),
+                    Image.PERSPECTIVE,
+                    coeffs,
+                    Image.NEAREST
+                )
+                transformed_mask_np = np.array(transformed_mask) > 0
+                transformed_masks.append(torch.tensor(transformed_mask_np, dtype=torch.uint8))
+            
+            if transformed_masks:
+                target['masks'] = torch.stack(transformed_masks)
+                
+                # 从掩码重新计算边界框
+                if 'boxes' in target:
+                    boxes = []
+                    labels = []
+                    areas = []
+                    
+                    for i, mask in enumerate(target['masks']):
+                        pos = torch.where(mask)
+                        if len(pos[0]) > 0 and len(pos[1]) > 0:
+                            y1, y2 = pos[0].min().item(), pos[0].max().item()
+                            x1, x2 = pos[1].min().item(), pos[1].max().item()
+                            
+                            # 确保框有效（不是单点）
+                            if x2 > x1 and y2 > y1:
+                                boxes.append([x1, y1, x2, y2])
+                                labels.append(target['labels'][i].item())
+                                areas.append((y2 - y1) * (x2 - x1))
+                    
+                    if boxes:
+                        target['boxes'] = torch.tensor(boxes, dtype=torch.float32)
+                        target['labels'] = torch.tensor(labels, dtype=torch.int64)
+                        # 更新面积
+                        if 'area' in target:
+                            target['area'] = torch.tensor(areas, dtype=torch.float32)
         
-        return image, target
+        return transformed_tensor, target
 
 def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333):
-    """
-    构建适合Mask R-CNN的数据变换流程
-    
-    参数:
-        train: 是否为训练模式
-        min_size: 最小尺寸
-        max_size: 最大尺寸
-    
-    返回:
-        transforms: 变换流程
-    """
-    transforms_list = []
-    
+    transforms = []
     if train:
-        # 训练模式下添加数据增强
-        # 1. 大尺度抖动 (LSJ)
-        transforms_list.append(LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5))
-        
-        # 2. 随机水平翻转
-        transforms_list.append(RandomHorizontalFlip(prob=0.5))
-        
-        # 3. 小角度旋转 (±10度)
-        transforms_list.append(SmallRotation(angle_range=10, prob=0.3))
-        
-        # 4. 安全随机裁剪
-        transforms_list.append(SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=0.3))
-        
-        # 5. 颜色抖动
-        transforms_list.append(ColorJitterTransform(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, prob=0.8))
-        
-        # 6. 随机灰度化
-        transforms_list.append(RandomGrayscale(prob=0.1))
-    
-    # 添加标准调整大小（训练和验证都需要）
-    transforms_list.append(Resize(min_size=min_size, max_size=max_size))
-    
-    # 添加标准化和转tensor（训练和验证都需要）
-    transforms_list.append(ToTensor())
-    transforms_list.append(Normalize())
-    
-    return Compose(transforms_list)
+        transforms.extend([
+            LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5),
+            RandomHorizontalFlip(0.5),
+            ColorJitterTransform(prob=0.8),
+            RandomGrayscale(prob=0.1),
+            SmallRotation(angle_range=10, prob=0.3),
+            SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=0.3),
+            MotionBlur(kernel_size=7, angle_range=180, prob=0.3),
+            RandomPerspective(distortion_scale=0.2, prob=0.3),
+        ])
+
+    transforms.extend([
+        Resize(min_size, max_size),
+        Normalize(),
+    ])
+
+    return Compose(transforms)
 
 def collate_fn(batch):
-    """
-    数据批处理函数
-    """
-    return tuple(zip(*batch)) 
+    return tuple(zip(*batch))

@@ -72,6 +72,17 @@ transforms:
     enabled: true
     prob: 0.1
 
+  motion_blur:  # 运动模糊
+    enabled: true
+    kernel_size: 7
+    angle_range: 180
+    prob: 0.3
+    
+  random_perspective:  # 随机透视变换
+    enabled: true
+    distortion_scale: 0.2
+    prob: 0.3
+
 # ====================== 日志 & 检查点 ======================
 logging:
   print_freq: 50

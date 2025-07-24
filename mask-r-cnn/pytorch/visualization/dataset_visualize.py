@@ -17,7 +17,7 @@ import torchvision.transforms.functional as F
 from transforms.mask_rcnn_transforms import (
     LargeScaleJitter, RandomHorizontalFlip, ColorJitterTransform,
     RandomGrayscale, SmallRotation, SafeRandomCrop, Normalize,
-    ToTensor, Resize
+    ToTensor, Resize, MotionBlur, RandomPerspective
 )
 
 
@@ -35,83 +35,101 @@ server_thread = None
 server_instance = None
 server_port = None
 
-def visualize_sample_with_annotations(image, target, title=None, figsize=(12, 12)):
+def tensor_to_numpy(image):
+    """
+    将tensor图像转换为numpy数组，用于matplotlib显示
+    
+    Args:
+        image: torch.Tensor类型的图像，形状为(C,H,W)
+    
+    Returns:
+        numpy数组，形状为(H,W,C)，值域为[0,255]的uint8类型
+    """
+    if not isinstance(image, torch.Tensor):
+        return np.array(image)
+        
+    # 反标准化，将数据范围恢复到[0, 1]
+    if image.shape[0] == 3:  # 如果是标准化的张量(C, H, W)
+        # 假设使用的是ImageNet的均值和标准差
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+        image = image * std + mean
+    
+    # 转换为numpy数组
+    image_np = image.permute(1, 2, 0).cpu().numpy()
+    image_np = np.clip(image_np, 0, 1)
+    image_np = (image_np * 255).astype(np.uint8)
+    
+    return image_np
+
+def visualize_sample_with_annotations(image, target=None, title=None, figsize=(12, 12), show_annotations=True):
     """
     可视化一个图像样本及其实例分割标注
     
     Args:
         image: PIL.Image或torch.Tensor类型的图像
-        target: 包含'boxes'和'masks'的字典
+        target: 包含'boxes'和'masks'的字典，如果为None则只显示图像
         title: 图像标题
         figsize: 图像大小
+        show_annotations: 是否显示标注（边界框和掩码）
     """
     # 将图像转换为numpy数组
-    if isinstance(image, torch.Tensor):
-        # 反标准化，将数据范围恢复到[0, 1]
-        if image.shape[0] == 3:  # 如果是标准化的张量(C, H, W)
-            # 假设使用的是ImageNet的均值和标准差
-            mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-            std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-            image = image * std + mean
-        
-        image_np = image.permute(1, 2, 0).cpu().numpy()
-        image_np = np.clip(image_np, 0, 1)
-        image_np = (image_np * 255).astype(np.uint8)
-    else:  # PIL.Image
-        image_np = np.array(image)
+    image_np = tensor_to_numpy(image)
     
     # 创建matplotlib图像
     fig, ax = plt.subplots(1, figsize=figsize)
     ax.imshow(image_np)
     
-    # 绘制每个实例的掩码和边界框
-    colors = generate_colors(len(target.get('masks', [])))
-    
-    if 'masks' in target and len(target['masks']) > 0:
-        masks = target['masks']
-        if isinstance(masks, torch.Tensor):
-            masks = masks.cpu().numpy()
+    # 如果需要显示标注且有标注数据
+    if show_annotations and target is not None:
+        # 绘制每个实例的掩码和边界框
+        colors = generate_colors(len(target.get('masks', [])))
         
-        for i, mask in enumerate(masks):
-            color = colors[i]
+        if 'masks' in target and len(target['masks']) > 0:
+            masks = target['masks']
+            if isinstance(masks, torch.Tensor):
+                masks = masks.cpu().numpy()
             
-            # 绘制掩码
-            mask_image = np.zeros_like(image_np)
-            if len(mask.shape) == 2:  # 单通道掩码
-                mask_bool = mask > 0
-                for c in range(3):
-                    mask_image[:, :, c] = np.where(mask_bool, color[c], 0)
-            
-            # 透明掩码叠加
-            mask_image = cv2.addWeighted(image_np, 1, mask_image, 0.5, 0)
-            ax.imshow(mask_image, alpha=0.5)
-    
-    # 绘制边界框
-    if 'boxes' in target and len(target['boxes']) > 0:
-        boxes = target['boxes']
-        if isinstance(boxes, torch.Tensor):
-            boxes = boxes.cpu().numpy()
+            for i, mask in enumerate(masks):
+                color = colors[i]
+                
+                # 绘制掩码
+                mask_image = np.zeros_like(image_np)
+                if len(mask.shape) == 2:  # 单通道掩码
+                    mask_bool = mask > 0
+                    for c in range(3):
+                        mask_image[:, :, c] = np.where(mask_bool, color[c], 0)
+                
+                # 透明掩码叠加
+                mask_image = cv2.addWeighted(image_np, 1, mask_image, 0.5, 0)
+                ax.imshow(mask_image, alpha=0.5)
         
-        for i, box in enumerate(boxes):
-            x1, y1, x2, y2 = box
-            color = colors[i]
+        # 绘制边界框
+        if 'boxes' in target and len(target['boxes']) > 0:
+            boxes = target['boxes']
+            if isinstance(boxes, torch.Tensor):
+                boxes = boxes.cpu().numpy()
             
-            # matplotlib使用RGB格式，转换为0-1范围
-            rgb_color = [c/255 for c in color]
-            
-            # 绘制边界框
-            rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, 
-                                 fill=False, edgecolor=rgb_color, linewidth=2)
-            ax.add_patch(rect)
-            
-            # 绘制标签
-            if 'labels' in target:
-                label_id = target['labels'][i]
-                if isinstance(label_id, torch.Tensor):
-                    label_id = label_id.item()
-                ax.text(x1, y1, f'ID:{label_id}', 
-                        bbox=dict(facecolor=rgb_color, alpha=0.5),
-                        fontsize=10, color='white')
+            for i, box in enumerate(boxes):
+                x1, y1, x2, y2 = box
+                color = colors[i]
+                
+                # matplotlib使用RGB格式，转换为0-1范围
+                rgb_color = [c/255 for c in color]
+                
+                # 绘制边界框
+                rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, 
+                                    fill=False, edgecolor=rgb_color, linewidth=2)
+                ax.add_patch(rect)
+                
+                # 绘制标签
+                if 'labels' in target:
+                    label_id = target['labels'][i]
+                    if isinstance(label_id, torch.Tensor):
+                        label_id = label_id.item()
+                    ax.text(x1, y1, f'ID:{label_id}', 
+                            bbox=dict(facecolor=rgb_color, alpha=0.5),
+                            fontsize=10, color='white')
     
     if title:
         ax.set_title(title)
@@ -250,7 +268,7 @@ def save_figure_to_cache(fig, key):
     img_str = base64.b64encode(buf.read()).decode('utf-8')
     image_cache[key] = img_str
 
-def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=None):
+def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=None, show_annotations=True):
     """
     预览各种数据增强效果
     
@@ -259,6 +277,7 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
         num_samples: 要显示的样本数量
         config: 配置对象，包含变换参数
         sample_indices: 指定的样本索引列表，如果提供则优先使用
+        show_annotations: 是否显示标注（边界框和掩码）
     """
     global server_thread, server_instance
     
@@ -299,19 +318,21 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
         "Color Jitter": ColorJitterTransform(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, prob=1.0),
         "Grayscale": RandomGrayscale(prob=1.0),
         "Small Rotation": SmallRotation(angle_range=10, prob=1.0),
-        "Safe Random Crop": SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=1.0)
+        "Safe Random Crop": SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=1.0),
+        "Motion Blur": MotionBlur(kernel_size=7, angle_range=180, prob=1.0),
+        "Random Perspective": RandomPerspective(distortion_scale=0.2, prob=1.0)
     }
     
     # 为每个样本和每种增强创建子图
     for idx in indices:
         img, target = dataset[idx]
         
-        # 确保图像是PIL格式以便应用变换
-        if isinstance(img, torch.Tensor):
-            img = F.to_pil_image(img)
+        # 确保图像是tensor格式
+        if not isinstance(img, torch.Tensor):
+            img = F.to_tensor(img)
         
         # 创建原始图像副本供变换使用
-        original_img = img.copy()
+        original_img = img.clone()
         original_target = {k: v.clone() if isinstance(v, torch.Tensor) else v 
                            for k, v in target.items()}
         
@@ -334,61 +355,58 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
                 augmented_target = original_target
             else:
                 # 应用变换并显示
-                augmented_img = original_img.copy()
+                augmented_img = original_img.clone()
                 augmented_target = {k: v.clone() if isinstance(v, torch.Tensor) else v 
                                    for k, v in original_target.items()}
                 augmented_img, augmented_target = transform(augmented_img, augmented_target)
             
             # 将图像转换为numpy数组
-            if isinstance(augmented_img, torch.Tensor):
-                augmented_img_np = augmented_img.permute(1, 2, 0).cpu().numpy()
-                augmented_img_np = np.clip(augmented_img_np, 0, 1)
-                augmented_img_np = (augmented_img_np * 255).astype(np.uint8)
-            else:  # PIL.Image
-                augmented_img_np = np.array(augmented_img)
+            augmented_img_np = tensor_to_numpy(augmented_img)
             
             # 显示图像
             ax.imshow(augmented_img_np)
             
-            # 绘制边界框和掩码
-            colors = generate_colors(len(augmented_target.get('masks', [])))
-            
-            if 'masks' in augmented_target and len(augmented_target['masks']) > 0:
-                masks = augmented_target['masks']
-                if isinstance(masks, torch.Tensor):
-                    masks = masks.cpu().numpy()
+            # 如果需要显示标注
+            if show_annotations:
+                # 绘制边界框和掩码
+                colors = generate_colors(len(augmented_target.get('masks', [])))
                 
-                for j, mask in enumerate(masks):
-                    color = colors[j]
+                if 'masks' in augmented_target and len(augmented_target['masks']) > 0:
+                    masks = augmented_target['masks']
+                    if isinstance(masks, torch.Tensor):
+                        masks = masks.cpu().numpy()
                     
-                    # 绘制掩码
-                    mask_image = np.zeros_like(augmented_img_np)
-                    if len(mask.shape) == 2:  # 单通道掩码
-                        mask_bool = mask > 0
-                        for c in range(3):
-                            mask_image[:, :, c] = np.where(mask_bool, color[c], 0)
-                    
-                    # 透明掩码叠加
-                    mask_image = cv2.addWeighted(augmented_img_np, 1, mask_image, 0.5, 0)
-                    ax.imshow(mask_image, alpha=0.5)
-            
-            # 绘制边界框
-            if 'boxes' in augmented_target and len(augmented_target['boxes']) > 0:
-                boxes = augmented_target['boxes']
-                if isinstance(boxes, torch.Tensor):
-                    boxes = boxes.cpu().numpy()
+                    for j, mask in enumerate(masks):
+                        color = colors[j]
+                        
+                        # 绘制掩码
+                        mask_image = np.zeros_like(augmented_img_np)
+                        if len(mask.shape) == 2:  # 单通道掩码
+                            mask_bool = mask > 0
+                            for c in range(3):
+                                mask_image[:, :, c] = np.where(mask_bool, color[c], 0)
+                        
+                        # 透明掩码叠加
+                        mask_image = cv2.addWeighted(augmented_img_np, 1, mask_image, 0.5, 0)
+                        ax.imshow(mask_image, alpha=0.5)
                 
-                for j, box in enumerate(boxes):
-                    x1, y1, x2, y2 = box
-                    color = colors[j]
+                # 绘制边界框
+                if 'boxes' in augmented_target and len(augmented_target['boxes']) > 0:
+                    boxes = augmented_target['boxes']
+                    if isinstance(boxes, torch.Tensor):
+                        boxes = boxes.cpu().numpy()
                     
-                    # matplotlib使用RGB格式，转换为0-1范围
-                    rgb_color = [c/255 for c in color]
-                    
-                    # 绘制边界框
-                    rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, 
-                                        fill=False, edgecolor=rgb_color, linewidth=2)
-                    ax.add_patch(rect)
+                    for j, box in enumerate(boxes):
+                        x1, y1, x2, y2 = box
+                        color = colors[j]
+                        
+                        # matplotlib使用RGB格式，转换为0-1范围
+                        rgb_color = [c/255 for c in color]
+                        
+                        # 绘制边界框
+                        rect = plt.Rectangle((x1, y1), x2-x1, y2-y1, 
+                                            fill=False, edgecolor=rgb_color, linewidth=2)
+                        ax.add_patch(rect)
             
             ax.set_title(aug_name)
             ax.axis('off')
@@ -402,7 +420,7 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
         
         # 为每种增强创建单独的图像
         for aug_name, transform in augmentations.items():
-            augmented_img = original_img.copy()
+            augmented_img = original_img.clone()
             augmented_target = {k: v.clone() if isinstance(v, torch.Tensor) else v 
                                for k, v in original_target.items()}
             
@@ -413,7 +431,8 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
             fig = visualize_sample_with_annotations(
                 augmented_img, 
                 augmented_target,
-                title=f"Sample {idx} - {aug_name}"
+                title=f"Sample {idx} - {aug_name}",
+                show_annotations=show_annotations
             )
             
             # 保存到缓存
