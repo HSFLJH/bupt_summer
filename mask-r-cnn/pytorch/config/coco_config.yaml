@@ -1,0 +1,96 @@
+# ====================== 数据集 ======================
+dataset:
+  # 数据集路径
+  root_dir: "/root/autodl-tmp/COCO" 
+  train_images: "train2017"
+  train_ann: "annotations/instances_train2017.json"
+  val_images: "val2017"
+  val_ann: "annotations/instances_val2017.json"
+  num_classes: 91  # COCO数据集类别数（包含背景）
+
+# ====================== 模型 ======================
+model:
+  backbone: "resnet50"  # 主干网络
+  fpn_out_channels: 256  # FPN输出通道数
+  roi_pool_size: 7  # ROI池化尺寸
+  mask_pool_size: 14  # 掩码池化尺寸
+  mask_pred_size: 28  # 掩码预测尺寸
+  pretrained: true  # 是否使用预训练权重
+
+# ====================== 训练 ======================
+training:
+  batch_size: 2
+  lr: 0.005
+  momentum: 0.9
+  weight_decay: 0.0001
+  lr_scheduler: "step"  # 学习率调度器类型: step, cosine, warmup
+  lr_steps: [8, 11]  # 学习率下降步数
+  lr_gamma: 0.1  # 学习率下降系数
+  epochs: 12
+  workers: 4  # 数据加载器工作进程数
+  optimizer: "sgd"  # 优化器: sgd, adam
+  aspect_ratio_group_factor: 3  # 宽高比分组因子，用于减少填充
+
+# ====================== 数据增强 ======================
+transforms:
+  # 基本变换参数
+  resize_min: 800
+  resize_max: 1333
+  
+  # Mask R-CNN数据增强参数
+  large_scale_jitter:  # 大尺度抖动 (LSJ)
+    enabled: true
+    min_scale: 0.3
+    max_scale: 2.0
+    prob: 0.5
+  
+  random_horizontal_flip:  # 水平翻转
+    enabled: true
+    prob: 0.5
+  
+  small_rotation:  # 小角度旋转
+    enabled: true
+    angle_range: 10
+    prob: 0.3
+    expand: false
+  
+  safe_random_crop:  # 安全随机裁剪
+    enabled: true
+    max_crop_fraction: 0.2
+    min_instance_area: 0.8
+    prob: 0.3
+  
+  color_jitter:  # 颜色抖动
+    enabled: true
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+    prob: 0.8
+  
+  random_grayscale:  # 随机灰度化
+    enabled: true
+    prob: 0.1
+
+# ====================== 日志 & 检查点 ======================
+logging:
+  print_freq: 50
+  save_dir: "checkpoints/coco_maskrcnn"
+  save_freq: 1          # Save every n epochs
+  eval_freq: 1          # Validate every n epochs
+  use_tensorboard: true
+
+# ====================== 评估 & 推理 ======================
+inference:
+  score_thresh: 0.05
+  nms_thresh: 0.5
+  max_detections_per_img: 100
+
+device:
+  use_cuda: true  # 是否使用CUDA
+  cuda_visible_devices: "0"  # 可见CUDA设备
+
+visualization:
+  enabled: true  # 是否启用可视化
+  interval: 100  # 每多少次迭代保存一次可视化
+  preview_samples: 5  # 预览增强效果的样本数
