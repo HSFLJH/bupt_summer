@@ -19,7 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Mask R-CNN 训练与评估")
     
     # 配置文件
-    parser.add_argument('--config', type=str, default='config/coco_config.yaml',
+    parser.add_argument('--config', type=str, default='/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/config/coco_config.yaml',
                         help='配置文件路径')
     
     # 模式选择
@@ -29,7 +29,7 @@ def parse_args():
                         help='评估模式')
     
     # 数据增强预览
-    parser.add_argument('--augmentation-preview', action='store_true',
+    parser.add_argument('--augmentation-preview', action='store_true', default=True,
                         help='预览数据增强效果')
     parser.add_argument('--num-preview-samples', type=int, default=5,
                         help='预览的样本数量')
@@ -37,8 +37,8 @@ def parse_args():
                         help='指定要预览的样本索引，用逗号分隔，例如"1,2,3"。如果提供此参数，则忽略num-preview-samples')
     parser.add_argument('--show-annotations', action='store_true', default=True,
                         help='是否显示标注（边界框和掩码）')
-    parser.add_argument('--augmentation-level', type=int, default=None, choices=[1, 2, 3, 4],
-                        help='数据增强级别 (0-4): 0=无, 1=基础, 2=默认, 3=较强, 4=最强')
+    parser.add_argument('--augmentation-level', type=int, default=1, choices=[1, 2, 3, 4],
+                        help='数据增强级别 (0-4): 0=无, 1=基础（实例分割推荐）, 2=默认, 3=较强, 4=最强')
     
     # 路径
     parser.add_argument('--output-dir', type=str, default='output',

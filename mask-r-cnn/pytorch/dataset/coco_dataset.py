@@ -11,7 +11,13 @@ from transforms.mask_rcnn_transforms import Compose, build_mask_rcnn_transforms
 
 class COCODataset(Dataset):
     """
-    标准 COCO 格式数据集加载器，适用于目标检测 + 实例分割（Mask R-CNN）。
+    标准 COCO 格式数据集加载器，继承于torch.utils.data.Dataset。
+    主要用于加载COCO数据集，并进行数据增强。
+    
+    参数：
+    - image_dir: 图像目录
+    - ann_file: 标注文件
+    - transforms: 数据增强
     """
 
     def __init__(self, image_dir, ann_file, transforms=None, train=True):
@@ -22,13 +28,15 @@ class COCODataset(Dataset):
         self.train = train
 
         # 类别信息
-        cats = self.coco.loadCats(self.coco.getCatIds())
+        cats = self.coco.dataset['categories']  # 不使用 getCatIds()
+        # 构建 COCO id 到 class name 的完整映射（按类别 id 升序排序）
+        cats = sorted(cats, key=lambda x: x['id'])
         self.classes = tuple(['__background__'] + [c['name'] for c in cats])
         self.num_classes = len(self.classes)
-        self.cat_ids = self.coco.getCatIds()
-        self.cat_id_to_continuous_id = {
-            coco_id: i + 1 for i, coco_id in enumerate(self.cat_ids)
-        }
+        self.cat_ids = [c['id'] for c in cats]  # 仍是 COCO 的原始 id，例如 [1, 2, 3, 4, 5, ..., 90, 91]
+        # 建立 COCO id → 连续 id（1~91）映射
+        self.cat_id_to_continuous_id = {coco_id: idx + 1 for idx, coco_id in enumerate(self.cat_ids)}
+
 
         print(f"加载了 {len(self.ids)} 张图像，{len(self.cat_ids)} 个类别")
 
@@ -40,10 +48,10 @@ class COCODataset(Dataset):
         img_info = coco.loadImgs(img_id)[0]
         path = img_info['file_name']
 
-        # 使用 PIL 加载图像
+        # 使用 PIL 加载图像，并且转化为tensor.
         img_path = os.path.join(self.root, path)
         img = Image.open(img_path).convert('RGB')
-        img = F.to_tensor(img)
+        img = F.pil_to_tensor(img).float() / 255.0
 
         # 获取原始尺寸（从 COCO 元数据）
         width = img_info['width']

@@ -451,6 +451,7 @@ class DetectionPresetTrain:
         mean=(123.0, 117.0, 104.0),
     ):
         transforms = []
+        transforms += [PILToTensor()]
         
         # 根据不同策略选择数据增强
         if data_augmentation == "hflip":
@@ -482,7 +483,7 @@ class DetectionPresetTrain:
             raise ValueError(f'Unknown data augmentation policy "{data_augmentation}"')
 
         # 基础变换
-        transforms += [PILToTensor()]
+        
         transforms += [ToDtype(torch.float, scale=True)]
 
         self.transforms = Compose(transforms)

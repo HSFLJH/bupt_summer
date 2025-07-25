@@ -289,6 +289,11 @@ def preview_augmentations(dataset, num_samples, config, sample_indices=None, sho
     # 创建输出目录
     output_dir = os.path.join('result', 'augmentation_preview')
     os.makedirs(output_dir, exist_ok=True)
+
+    # 启动服务器
+    global server_thread
+    server_thread = threading.Thread(target=start_server, daemon=True)
+    server_thread.start()
     
     # 获取数据增强级别
     aug_level = config['transforms'].get('augmentation_level', 2)
@@ -298,10 +303,10 @@ def preview_augmentations(dataset, num_samples, config, sample_indices=None, sho
     print("数据增强方法:")
     if aug_level >= 1:
         print("  - 水平翻转 (RandomHorizontalFlip)")
-        print("  - 大尺度抖动 (LargeScaleJitter)")
     if aug_level >= 2:
         print("  - 颜色抖动 (ColorJitterTransform)")
         print("  - 小角度旋转 (SmallRotation)")
+        print("  - 大尺度抖动 (LargeScaleJitter)")
     if aug_level >= 3:
         print("  - 安全随机裁剪 (SafeRandomCrop)")
         print("  - 随机灰度化 (RandomGrayscale)")
@@ -335,7 +340,7 @@ def preview_augmentations(dataset, num_samples, config, sample_indices=None, sho
     if aug_level >= 1:
         augmentations.update({
             "Large Scale Jitter": LargeScaleJitter(min_scale=0.3, max_scale=2.0),
-            "Random Horizontal Flip": RandomHorizontalFlip(prob=1.0),  # 设置为1.0确保应用
+            "Random Horizontal Flip": RandomHorizontalFlip(),  # 设置为1.0确保应用
         })
     
     # 第2级增强

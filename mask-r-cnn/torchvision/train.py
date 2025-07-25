@@ -11,6 +11,7 @@ import argparse
 import torch
 import torchvision
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
+from torch.utils.tensorboard import SummaryWriter
 
 from dataset_coco import CocoInstanceDataset, get_transform
 from model import get_instance_segmentation_model
@@ -21,6 +22,8 @@ log_dir = "./logs"
 os.makedirs(log_dir, exist_ok=True)
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 log_file = os.path.join(log_dir, f"train_{timestamp}.log")
+
+
 
 # 标准输出和错误都重定向到文件和终端
 class Tee(object):
@@ -68,7 +71,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Mask R-CNN训练脚本 - 支持自定义参数配置')
     
     # ==================== 【数据相关参数】 ====================
-    parser.add_argument('--data-path', default='/root/autodl-tmp/COCO', type=str, 
+    parser.add_argument('--data-path', default='/home/lishengjie/data/COCO2017', type=str, 
                        help='COCO数据集根目录路径 ')
     parser.add_argument('--train-images', default='train2017', type=str,
                        help='训练图像文件夹名称 ')
@@ -86,10 +89,8 @@ def parse_args():
                        help='是否使用预训练权重 (默认: True)')
     
     # ==================== 【训练相关参数】 ====================
-    parser.add_argument('--batch-size', default=4, type=int,
+    parser.add_argument('--batch-size', default=6, type=int,
                        help='批次大小 (默认: 4)')
-    parser.add_argument('--batch-size', default=4, type=int,
-                       help='批次大小 (默认: 8)')
     parser.add_argument('--epochs', default=3, type=int,
                        help='训练轮数 (默认: 3)')
     parser.add_argument('--lr', default=0.005, type=float,
@@ -153,6 +154,7 @@ def main(args):
     output_dir = os.path.join(args.output_dir, f"maskrcnn_{timestamp}")
     mkdir(output_dir)
     print(f"模型将保存到: {output_dir}")
+    writer = SummaryWriter(log_dir=os.path.join(output_dir, "tensorboard"))
 
     # ==================== 【数据加载与预处理】 ====================
     print("========== 数据加载开始 ==========")
@@ -264,7 +266,8 @@ def main(args):
             data_loader, 
             device, 
             epoch, 
-            print_freq=args.print_freq
+            print_freq=args.print_freq,
+            writer=writer
         )
         
         # 【学习率更新】
@@ -280,7 +283,21 @@ def main(args):
 
         # 【模型评估】在验证集上评估模型性能
         print("开始验证...")
-        evaluate(model, data_loader_test, device=device)
+        evaluator = evaluate(model, data_loader_test, device=device)
+
+        # 获取 box 和 segm 的 COCO 指标
+        if writer and evaluator.coco_eval:
+            if "bbox" in evaluator.coco_eval:
+                stats = evaluator.coco_eval["bbox"].stats
+                writer.add_scalar("Val/bbox_mAP", stats[0], epoch)
+                writer.add_scalar("Val/bbox_mAP50", stats[1], epoch)
+                writer.add_scalar("Val/bbox_mAP75", stats[2], epoch)
+
+            if "segm" in evaluator.coco_eval:
+                stats = evaluator.coco_eval["segm"].stats
+                writer.add_scalar("Val/mask_mAP", stats[0], epoch)
+                writer.add_scalar("Val/mask_mAP50", stats[1], epoch)
+                writer.add_scalar("Val/mask_mAP75", stats[2], epoch)
 
     # 【最终模型保存】
     final_model_path = os.path.join(output_dir, "model_final.pth")

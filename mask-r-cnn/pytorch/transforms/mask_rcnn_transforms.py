@@ -3,7 +3,10 @@ import math
 import numpy as np
 import torch
 import torchvision.transforms.functional as F
-import torchvision.transforms as T
+from torch import nn, Tensor
+from torchvision.transforms import functional as F, InterpolationMode, transforms as T
+from typing import Dict, List, Optional, Tuple
+
 
 class Compose:
     def __init__(self, transforms):
@@ -41,22 +44,17 @@ class LargeScaleJitter:
 
         return image, target
 
-class RandomHorizontalFlip:
-    def __init__(self, prob=0.5):
-        self.prob = prob
-
-    def __call__(self, image, target):
-        if random.random() < self.prob:
+class RandomHorizontalFlip(T.RandomHorizontalFlip):
+    def forward(
+        self, image: Tensor, target: Optional[Dict[str, Tensor]] = None
+    ) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
+        if torch.rand(1) < self.p:
             image = F.hflip(image)
-            _, _, width = image.shape
-
-            if 'boxes' in target:
-                boxes = target['boxes']
-                boxes[:, [0, 2]] = width - boxes[:, [2, 0]]
-                target['boxes'] = boxes
-            if 'masks' in target:
-                target['masks'] = target['masks'].flip(-1)
-
+            if target is not None:
+                _, _, width = F.get_dimensions(image)
+                target["boxes"][:, [0, 2]] = width - target["boxes"][:, [2, 0]]
+                if "masks" in target:
+                    target["masks"] = target["masks"].flip(-1)
         return image, target
 
 class ColorJitterTransform:
@@ -434,7 +432,6 @@ def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333, augmenta
         if augmentation_level >= 1:
             transforms.extend([
                 RandomHorizontalFlip(0.5),  # 水平翻转，基础且有效的增强
-                LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5),  # 尺度抖动，适应不同大小的实例
             ])
         
         # 第2级增强：默认级别，中等强度增强
@@ -442,6 +439,7 @@ def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333, augmenta
             transforms.extend([
                 SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=0.3),  # 安全随机裁剪
                 SmallRotation(angle_range=10, prob=0.3),  # 小角度旋转，保持实例完整性
+                LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5),  # 尺度抖动，适应不同大小的实例
             ])
         
         # 第3级增强：较强增强

@@ -1,7 +1,7 @@
 # ====================== 数据集 ======================
 dataset:
   # 数据集路径
-  root_dir: "/root/autodl-tmp/COCO" 
+  root_dir: "/home/lishengjie/data/COCO2017" 
   train_images: "train2017"
   train_ann: "annotations/instances_train2017.json"
   val_images: "val2017"

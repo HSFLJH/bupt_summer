@@ -12,7 +12,7 @@ from coco_utils import get_coco_api_from_dataset
 from tqdm import tqdm
 
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None):
+def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None, writer=None):
     """
     单轮训练主循环，集成tqdm进度条，实时显示训练进度。
     适合初学者理解的详细注释。
@@ -47,6 +47,9 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
     )
     # 遍历每一个batch（小批量数据）
     for images, targets in data_iter:
+
+        global_step = epoch * len(data_loader) + data_iter.n # 当前训练步数
+
         try:
             # 把所有图片移动到指定设备（如GPU）
             images = list(image.to(device) for image in images)
@@ -94,6 +97,15 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
         # 更新指标记录器（损失、学习率等）
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+
+        # 写入tensorboard日志
+
+        if writer:
+            writer.add_scalar("Loss/Total", loss_value, global_step)
+            writer.add_scalar("Loss/Classifier", loss_dict_reduced['loss_classifier'].item(), global_step)
+            writer.add_scalar("Loss/Box", loss_dict_reduced['loss_box_reg'].item(), global_step)
+            writer.add_scalar("Loss/Mask", loss_dict_reduced['loss_mask'].item(), global_step)
+            writer.add_scalar("LR", optimizer.param_groups[0]['lr'], global_step)
 
         # 在tqdm进度条上显示当前loss和lr
         data_iter.set_postfix({
@@ -207,3 +219,5 @@ def evaluate(model, data_loader, device):
     torch.set_num_threads(n_threads)
     # 返回COCO评估器对象
     return coco_evaluator
+
+
