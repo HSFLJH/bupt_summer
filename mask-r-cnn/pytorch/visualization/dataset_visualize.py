@@ -268,33 +268,48 @@ def save_figure_to_cache(fig, key):
     img_str = base64.b64encode(buf.read()).decode('utf-8')
     image_cache[key] = img_str
 
-def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=None, show_annotations=True):
+def preview_augmentations(dataset, num_samples, config, sample_indices=None, show_annotations=True):
     """
-    预览各种数据增强效果
+    预览数据增强效果
     
     Args:
-        dataset: 数据集对象
-        num_samples: 要显示的样本数量
-        config: 配置对象，包含变换参数
-        sample_indices: 指定的样本索引列表，如果提供则优先使用
-        show_annotations: 是否显示标注（边界框和掩码）
+        dataset: 数据集
+        num_samples: 预览样本数
+        config: 配置
+        sample_indices: 指定样本索引
+        show_annotations: 是否显示标注
     """
-    global server_thread, server_instance
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    from matplotlib.colors import TABLEAU_COLORS
+    import numpy as np
+    import random
+    import os
     
-    if num_samples <= 0:
-        return
+    # 创建输出目录
+    output_dir = os.path.join('result', 'augmentation_preview')
+    os.makedirs(output_dir, exist_ok=True)
     
-    # 启动HTTP服务器（如果尚未启动）
-    if server_thread is None:
-        server_thread = threading.Thread(target=start_server, daemon=True)
-        server_thread.start()
-        # 等待服务器启动
-        time.sleep(1)
+    # 获取数据增强级别
+    aug_level = config['transforms'].get('augmentation_level', 2)
     
-    # 清空图像缓存
-    image_cache.clear()
+    # 打印数据增强级别信息
+    print(f"数据增强级别: {aug_level}")
+    print("数据增强方法:")
+    if aug_level >= 1:
+        print("  - 水平翻转 (RandomHorizontalFlip)")
+        print("  - 大尺度抖动 (LargeScaleJitter)")
+    if aug_level >= 2:
+        print("  - 颜色抖动 (ColorJitterTransform)")
+        print("  - 小角度旋转 (SmallRotation)")
+    if aug_level >= 3:
+        print("  - 安全随机裁剪 (SafeRandomCrop)")
+        print("  - 随机灰度化 (RandomGrayscale)")
+    if aug_level >= 4:
+        print("  - 运动模糊 (MotionBlur)")
+        print("  - 随机透视变换 (RandomPerspective)")
     
-    # 选择样本
+    # 获取样本索引
     if sample_indices is not None:
         # 使用指定的样本索引
         indices = [idx for idx in sample_indices if 0 <= idx < len(dataset)]
@@ -313,15 +328,36 @@ def preview_augmentations(dataset, num_samples=5, config=None, sample_indices=No
     # 设置augmentations,即数据增强方式以及参数
     augmentations = {
         "Original": None,
-        "Large Scale Jitter": LargeScaleJitter(min_scale=0.3, max_scale=2.0),
-        "Random Horizontal Flip": RandomHorizontalFlip(prob=1.0),  # 设置为1.0确保应用
-        "Color Jitter": ColorJitterTransform(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, prob=1.0),
-        "Grayscale": RandomGrayscale(prob=1.0),
-        "Small Rotation": SmallRotation(angle_range=10, prob=1.0),
-        "Safe Random Crop": SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=1.0),
-        "Motion Blur": MotionBlur(kernel_size=7, angle_range=180, prob=1.0),
-        "Random Perspective": RandomPerspective(distortion_scale=0.2, prob=1.0)
     }
+    
+    # 根据增强级别添加对应的增强方法
+    # 第1级增强
+    if aug_level >= 1:
+        augmentations.update({
+            "Large Scale Jitter": LargeScaleJitter(min_scale=0.3, max_scale=2.0),
+            "Random Horizontal Flip": RandomHorizontalFlip(prob=1.0),  # 设置为1.0确保应用
+        })
+    
+    # 第2级增强
+    if aug_level >= 2:
+        augmentations.update({
+            "Color Jitter": ColorJitterTransform(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, prob=1.0),
+            "Small Rotation": SmallRotation(angle_range=10, prob=1.0),
+        })
+    
+    # 第3级增强
+    if aug_level >= 3:
+        augmentations.update({
+            "Safe Random Crop": SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=1.0),
+            "Grayscale": RandomGrayscale(prob=1.0),
+        })
+    
+    # 第4级增强
+    if aug_level >= 4:
+        augmentations.update({
+            "Motion Blur": MotionBlur(kernel_size=7, angle_range=180, prob=1.0),
+            "Random Perspective": RandomPerspective(distortion_scale=0.2, prob=1.0),
+        })
     
     # 为每个样本和每种增强创建子图
     for idx in indices:

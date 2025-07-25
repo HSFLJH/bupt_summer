@@ -37,6 +37,13 @@ transforms:
   resize_min: 800
   resize_max: 1333
   
+  # 数据增强级别 (1-4)
+  # 1: 基础增强 (水平翻转、尺度抖动)
+  # 2: 默认级别 (基础 + 颜色抖动、小角度旋转)
+  # 3: 较强增强 (默认 + 安全随机裁剪、随机灰度化)
+  # 4: 最强增强 (较强 + 运动模糊、随机透视变换)
+  augmentation_level: 2
+  
   # Mask R-CNN数据增强参数
   large_scale_jitter:  # 大尺度抖动 (LSJ)
     enabled: true

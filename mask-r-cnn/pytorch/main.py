@@ -37,6 +37,8 @@ def parse_args():
                         help='指定要预览的样本索引，用逗号分隔，例如"1,2,3"。如果提供此参数，则忽略num-preview-samples')
     parser.add_argument('--show-annotations', action='store_true', default=True,
                         help='是否显示标注（边界框和掩码）')
+    parser.add_argument('--augmentation-level', type=int, default=None, choices=[1, 2, 3, 4],
+                        help='数据增强级别 (0-4): 0=无, 1=基础, 2=默认, 3=较强, 4=最强')
     
     # 路径
     parser.add_argument('--output-dir', type=str, default='output',
@@ -75,6 +77,11 @@ def setup_config(args):
     
     if args.batch_size is not None:
         config['training']['batch_size'] = args.batch_size
+    
+    # 数据增强级别
+    if args.augmentation_level is not None:
+        config['transforms']['augmentation_level'] = args.augmentation_level
+        print(f"使用数据增强级别: {args.augmentation_level}")
     
     # 确保输出目录存在
     os.makedirs(args.output_dir, exist_ok=True)

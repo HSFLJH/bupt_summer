@@ -411,20 +411,54 @@ class RandomPerspective:
 
         return image, target
 
-def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333):
+def build_mask_rcnn_transforms(train=True, min_size=800, max_size=1333, augmentation_level=2):
+    """
+    构建Mask R-CNN数据增强转换流水线
+    
+    Args:
+        train: 是否为训练模式
+        min_size: 缩放后的最小尺寸
+        max_size: 缩放后的最大尺寸
+        augmentation_level: 数据增强级别 (1-4)
+            - 1级: 最基础的增强，适合实例分割任务的必要增强
+            - 2级: 默认级别，中等强度增强，适合大多数实例分割任务
+            - 3级: 较强增强，添加更多变换
+            - 4级: 最强增强，包含所有可用的增强方法
+    
+    Returns:
+        Compose: 数据增强转换流水线
+    """
     transforms = []
     if train:
-        transforms.extend([
-            LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5),
-            RandomHorizontalFlip(0.5),
-            ColorJitterTransform(prob=0.8),
-            RandomGrayscale(prob=0.1),
-            SmallRotation(angle_range=10, prob=0.3),
-            SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=0.3),
-            MotionBlur(kernel_size=7, angle_range=180, prob=0.3),
-            RandomPerspective(distortion_scale=0.2, prob=0.3),
-        ])
+        # 第1级增强：最基础的增强，适合实例分割任务的必要增强
+        if augmentation_level >= 1:
+            transforms.extend([
+                RandomHorizontalFlip(0.5),  # 水平翻转，基础且有效的增强
+                LargeScaleJitter(min_scale=0.3, max_scale=2.0, prob=0.5),  # 尺度抖动，适应不同大小的实例
+            ])
+        
+        # 第2级增强：默认级别，中等强度增强
+        if augmentation_level >= 2:
+            transforms.extend([
+                SafeRandomCrop(max_crop_fraction=0.2, min_instance_area=0.8, prob=0.3),  # 安全随机裁剪
+                SmallRotation(angle_range=10, prob=0.3),  # 小角度旋转，保持实例完整性
+            ])
+        
+        # 第3级增强：较强增强
+        if augmentation_level >= 3:
+            transforms.extend([
+                ColorJitterTransform(prob=0.8),  # 颜色抖动，增加颜色多样性
+                RandomGrayscale(prob=0.1),  # 随机灰度化
+            ])
+        
+        # 第4级增强：最强增强，包含所有方法
+        if augmentation_level >= 4:
+            transforms.extend([
+                MotionBlur(kernel_size=7, angle_range=180, prob=0.3),  # 运动模糊
+                RandomPerspective(distortion_scale=0.2, prob=0.3),  # 随机透视变换
+            ])
 
+    # 必要的基础转换，不受augmentation_level影响
     transforms.extend([
         Resize(min_size, max_size),
         Normalize(),

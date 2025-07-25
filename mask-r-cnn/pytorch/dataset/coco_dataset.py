@@ -143,10 +143,14 @@ def create_coco_dataloader(config, train=True):
         image_dir = os.path.join(root_dir, config['dataset']['val_images'])
         ann_file = os.path.join(root_dir, config['dataset']['val_ann'])
 
+    # 获取数据增强级别
+    augmentation_level = config['transforms'].get('augmentation_level', 2)
+
     transforms = build_mask_rcnn_transforms(
         train=train,
         min_size=config['transforms']['resize_min'],
-        max_size=config['transforms']['resize_max']
+        max_size=config['transforms']['resize_max'],
+        augmentation_level=augmentation_level
     )
 
     dataset = build_coco_dataset(image_dir, ann_file, transforms, train)
