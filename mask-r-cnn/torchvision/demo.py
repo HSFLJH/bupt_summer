@@ -1,56 +1,135 @@
-# 演示脚本 - Mask R-CNN推理与可视化
-# 加载训练好的模型，对图像进行实例分割并可视化结果
-
+import os
+import argparse
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from torchvision.transforms.functional import to_pil_image
+from pycocotools.coco import COCO
 from dataset_coco import CocoInstanceDataset, get_transform
 from model import get_instance_segmentation_model
+import numpy as np
 
-# ==================== 【环境设置】 ====================
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+def load_category_names(ann_file):
+    """
+    从 COCO 标注文件中读取类别名称，返回字典和列表
+    """
+    coco = COCO(ann_file)
+    cats = coco.loadCats(coco.getCatIds())
+    id_to_name = {cat['id']: cat['name'] for cat in cats}
+    id_list = [id_to_name[i] for i in sorted(id_to_name)]
+    return id_to_name, id_list
 
-# ==================== 【模型加载】 ====================
-# 【模型初始化】创建与训练时相同的模型结构
-model = get_instance_segmentation_model(num_classes=2)
 
-# 【权重加载】加载训练好的模型权重
-model.load_state_dict(torch.load("maskrcnn_coco.pth"))
-model.to(device)
-model.eval()  # 设置为评估模式，关闭dropout和batch normalization
+def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, score_threshold=0.5):
+    """
+    可视化预测结果：显示边框、标签、mask
+    """
+    plt.figure(figsize=(10, 10), facecolor='black')
 
-# ==================== 【测试数据准备】 ====================
-# 【数据集初始化】加载验证集用于测试
-dataset = CocoInstanceDataset(
-    img_folder="coco/val2017",                                    # 验证图像路径
-    ann_file="coco/annotations/instances_val2017.json",          # 验证标注文件
-    transforms=get_transform()                                   # 图像预处理变换
-)
+    # 1. 准备好要显示的底层图片 (H, W, C)
+    img_to_show = img_tensor.permute(1, 2, 0).cpu().numpy()
 
-# 【单张图像获取】获取数据集中的第一张图像
-img, _ = dataset[0]
+    ax = plt.gca()
 
-# ==================== 【模型推理】 ====================
-# 【推理过程】关闭梯度计算以节省内存和加速推理
-with torch.no_grad():
-    # 输入需要是列表格式，即使只有一张图像
-    prediction = model([img.to(device)])
+    # 2. 创建一个空白的、和原图一样大的图层，用来画所有的 masks
+    # 这个图层将一次性地叠加在原图上
+    masks_overlay = np.zeros_like(img_to_show)
 
-# ==================== 【结果可视化】 ====================
-# 【图像格式转换】将张量转换为可显示的numpy数组
-# 从[0,1]范围转换到[0,255]，并调整维度顺序从CHW到HWC
-img_show = img.mul(255).permute(1, 2, 0).byte().cpu().numpy()
+    masks = prediction['masks']
+    boxes = prediction['boxes']
+    labels = prediction['labels']
+    scores = prediction['scores']
+    num_instances = len(masks)
+    colors = plt.get_cmap('hsv', num_instances)
 
-# 【显示原图】
-plt.imshow(img_show)
+    for i in range(num_instances):
+        score = scores[i].item()
+        if score < score_threshold:
+            continue
 
-# 【mask叠加显示】遍历所有检测到的实例，显示分割mask
-for i in range(len(prediction[0]['masks'])):
-    # 【mask处理】提取单个mask并转换为可显示格式
-    mask = prediction[0]['masks'][i, 0].mul(255).byte().cpu().numpy()
-    
-    # 【半透明叠加】将mask以半透明方式叠加到原图上
-    plt.imshow(mask, alpha=0.4)
+        color = colors(i)
+        
+        # 3. 在空白图层上填充 mask 的颜色，不在这里 imshow
+        mask = masks[i, 0].cpu().numpy() > 0.5
+        masks_overlay[mask] = color[:3] # 只填充 RGB 颜色
 
-# 【图像显示设置】
-plt.axis('off')  # 关闭坐标轴显示
-plt.show()       # 显示最终结果
+        # 边框和文字的绘制逻辑不变
+        box = boxes[i].cpu().numpy()
+        label_id = labels[i].item()
+        label_name = id_to_name.get(label_id, str(label_id))
+
+        ax.add_patch(patches.Rectangle((box[0], box[1]), box[2]-box[0], box[3]-box[1],
+                                      linewidth=2, edgecolor=color, facecolor='none'))
+        ax.text(box[0], box[1] - 5, f'{label_name}: {score:.2f}', fontsize=10,
+                bbox=dict(facecolor=color, alpha=0.8), color='white')
+
+    # 4. 所有 mask 都画到空白图层上之后，最后一次性地、半透明地将这个图层叠加到原图上
+    plt.imshow(masks_overlay)
+
+    # 5. 最后画上原图
+    plt.imshow(img_to_show) # 画好mask之后，放上图片，mask是透明的
+
+    plt.axis('off')
+    if save_path:
+        # 使用 pad_inches=0 来去除白边
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.0, facecolor='black')
+        print(f"已保存结果至: {save_path}")
+        plt.close()
+    else:
+        plt.show()
+
+def run_inference(model_path, img_folder, ann_file, img_indices, save_dir, score_threshold=0.5):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # 加载类别映射
+    id_to_name, _ = load_category_names(ann_file)
+
+    # 加载模型
+    model = get_instance_segmentation_model(num_classes=91)
+    assert os.path.exists(model_path), f"模型路径不存在: {model_path}"
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.to(device)
+    model.eval()
+
+    # 加载数据
+    dataset = CocoInstanceDataset(
+        img_folder=img_folder,
+        ann_file=ann_file,
+        transforms=get_transform(train=False)
+    )
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    for idx in img_indices:
+        img, _ = dataset[idx]
+        with torch.no_grad():
+            prediction = model([img.to(device)])[0]
+        save_path = os.path.join(save_dir, f"inference_result_{idx}.png")
+        visualize_prediction(img, prediction, id_to_name, save_path=save_path, score_threshold=score_threshold)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Mask R-CNN 推理与可视化（增强版）")
+    parser.add_argument("--model-path", type=str, help="训练好的模型权重路径",
+                        default="/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/maskrcnn_2025-07-26_06-20-36/model_final.pth")
+    parser.add_argument("--img-folder", type=str, help="验证集图像目录",
+                        default="/home/lishengjie/data/COCO2017/val2017")
+    parser.add_argument("--ann-file", type=str, help="COCO标注文件路径",
+                        default="/home/lishengjie/data/COCO2017/annotations/instances_val2017.json")
+    parser.add_argument("--save-dir", type=str, default="./vis_results", help="可视化结果保存目录")
+    parser.add_argument("--indices", type=int, nargs='+', default=[0], help="图像索引，可输入多个")
+    parser.add_argument("--score-thresh", type=float, default=0.5, help="置信度阈值，低于此值不显示")
+
+    args = parser.parse_args()
+
+    run_inference(
+        model_path=args.model_path,
+        img_folder=args.img_folder,
+        ann_file=args.ann_file,
+        img_indices=args.indices,
+        save_dir=args.save_dir,
+        score_threshold=args.score_thresh
+    )
+
+if __name__ == "__main__":
+    main()

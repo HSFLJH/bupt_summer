@@ -91,7 +91,7 @@ def parse_args():
     # ==================== 【训练相关参数】 ====================
     parser.add_argument('--batch-size', default=6, type=int,
                        help='批次大小 (默认: 4)')
-    parser.add_argument('--epochs', default=3, type=int,
+    parser.add_argument('--epochs', default=1, type=int,
                        help='训练轮数 (默认: 3)')
     parser.add_argument('--lr', default=0.005, type=float,
                        help='初始学习率 (默认: 0.005)')
