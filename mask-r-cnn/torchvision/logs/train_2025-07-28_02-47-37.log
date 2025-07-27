@@ -1,0 +1,50 @@
+使用GPU训练: NVIDIA A40
+模型将保存到: ./result/maskrcnn_2025-07-28_02-47-37
+========== 数据加载开始 ==========
+loading annotations into memory...
+Done (t=13.19s)
+creating index...
+index created!
+Traceback (most recent call last):
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/__main__.py", line 71, in <module>
+    cli.main()
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 501, in main
+    run()
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 351, in run_file
+    runpy.run_path(target, run_name="__main__")
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 310, in run_path
+    return _run_module_code(code, init_globals, run_name, pkg_name=pkg_name, script_name=fname)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 127, in _run_module_code
+    _run_code(code, mod_globals, init_globals, mod_name, mod_spec, pkg_name, script_name)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 118, in _run_code
+    exec(code, run_globals)
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
+    main(args)
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 166, in main
+    dataset = CocoInstanceDataset(
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in __init__
+    self.ids = [img_id for img_id in self.ids if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in <listcomp>
+    self.ids = [img_id for img_id in self.ids if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/pycocotools/coco.py", line 143, in getAnnIds
+    lists = [self.imgToAnns[imgId] for imgId in imgIds if imgId in self.imgToAnns]
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/pycocotools/coco.py", line 143, in <listcomp>
+    lists = [self.imgToAnns[imgId] for imgId in imgIds if imgId in self.imgToAnns]
+KeyboardInterrupt
+Exception ignored in: <module 'threading' from '/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py'>
+Traceback (most recent call last):
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 1567, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Traceback (most recent call last):
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/pydevd.py", line 2461, in __wait_for_threads_to_finish
+    self._wait_for_threads_to_finish_called_event.wait(timeout=timeout)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 607, in wait
+    signaled = self._cond.wait(timeout)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt
