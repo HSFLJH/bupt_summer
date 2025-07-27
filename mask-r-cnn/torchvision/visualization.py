@@ -47,4 +47,4 @@ def plot_tensorboard_scalars(log_dir, tags, title="训练指标变化", output_p
 if __name__ == "__main__":
     log_dir = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/one/tensorboard"
     tags = ["Loss/Total", "Loss/Classifier", "Loss/Box", "Loss/Mask", "LR"]
-    plot_tensorboard_scalars(log_dir, tags, title="训练过程指标变化", output_path="./result/pngs/metrics_plot.png")
+    plot_tensorboard_scalars(log_dir, tags, title="训练过程指标变化", output_path="./result/train_pngs/metrics_plot.png")
