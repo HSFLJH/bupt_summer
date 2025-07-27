@@ -189,7 +189,7 @@ def visualize_prediction(img, pred, id_to_name, sequence_dir, idx, score_thresho
                         bbox=dict(facecolor='white', alpha=0.7), color='black')
                 
         # 5. 最后画上原图
-        ax5.imshow(to_pil_image(img_uint8), alpha=0.8)
+        ax5.imshow(to_pil_image(img_uint8), alpha=0.5)
         
         ax5.axis('off')
         plt.tight_layout()
@@ -229,7 +229,7 @@ def visualize_prediction(img, pred, id_to_name, sequence_dir, idx, score_thresho
             ax6.text(box[0], box[1] - 5, label_name, fontsize=10,
                     bbox=dict(facecolor=color, alpha=0.8), color='white')
         
-        ax6.imshow(to_pil_image(img_uint8), alpha=0.8)
+        ax6.imshow(to_pil_image(img_uint8), alpha=0.5)
         ax6.axis('off')
         plt.tight_layout()
         plt.savefig(os.path.join(sequence_dir, f"7_mask框类别_{idx}.png"), bbox_inches='tight')
@@ -375,7 +375,7 @@ def start_http_server(date_dir):
 
 # ========= 主流程 =========
 if __name__ == '__main__':
-    print("输入图像编号（0 到 {}）用空格分隔，或直接回车随机选择：".format(len(dataset)-1))
+    print("输入图像编号（0 到 {}）用空格分隔，或直接回车使用默认序列：".format(len(dataset)-1))
     user_input = input("图像编号: ")
     if user_input.strip():
         ids = [int(i) for i in user_input.strip().split()]

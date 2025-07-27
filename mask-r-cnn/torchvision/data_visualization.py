@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 from tensorboard.backend.event_processing import event_accumulator
 
-def plot_tensorboard_scalars(log_dir, tags, title="训练指标变化", output_path="metrics_plot.png"):
+def plot_tensorboard_scalars(log_dir, tags, title="训练指标变化", output_path = None):
     """
     读取 TensorBoard 日志文件，提取指定指标，并绘制曲线。
 
@@ -18,6 +18,11 @@ def plot_tensorboard_scalars(log_dir, tags, title="训练指标变化", output_p
         print(" 未找到 TensorBoard 事件日志文件")
         return
     event_path = os.path.join(log_dir, sorted(event_files)[-1])
+
+    # c创建输出文件文件夹
+    if output_path is None:
+        output_path = os.path.join(log_dir, "train_pngs")
+        os.makedirs(output_path, exist_ok=True)
     
     # 加载事件数据
     ea = event_accumulator.EventAccumulator(event_path)
@@ -41,10 +46,10 @@ def plot_tensorboard_scalars(log_dir, tags, title="训练指标变化", output_p
     plt.legend()
     plt.tight_layout()
     plt.savefig(output_path)
-    print(f"✅ 图像已保存为 {output_path}")
+    print(f" 图像已保存为 {output_path}")
 
 
 if __name__ == "__main__":
     log_dir = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/one/tensorboard"
     tags = ["Loss/Total", "Loss/Classifier", "Loss/Box", "Loss/Mask", "LR"]
-    plot_tensorboard_scalars(log_dir, tags, title="训练过程指标变化", output_path="./result/train_pngs/metrics_plot.png")
+    plot_tensorboard_scalars(log_dir, tags, title="train data", output_path="/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/three/train_pngs/metrics_plot.png")
