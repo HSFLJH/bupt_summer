@@ -26,7 +26,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Mask R-CNN 训练与评估")
     
     # 配置文件
-    parser.add_argument('--config', type=str, default='/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/config/coco_config.yaml',
+    parser.add_argument('--config', type=str, default='/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/config/coco_config.yaml',
                         help='配置文件路径')
     
     # 模式选择
@@ -52,7 +52,7 @@ def parse_args():
                         help='运行demo_one')
     
     # 路径
-    parser.add_argument('--output-dir', type=str, default='/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result',
+    parser.add_argument('--output-dir', type=str, default='/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result',
                         help='输出目录')
     parser.add_argument('--resume', type=str, default='',
                         help='恢复训练的检查点路径')

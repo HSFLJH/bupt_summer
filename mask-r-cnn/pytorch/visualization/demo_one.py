@@ -128,13 +128,13 @@ def parse_indices(indices_str):
 def main():
     parser = argparse.ArgumentParser(description="Mask R-CNN 推理与可视化（增强版）")
     parser.add_argument("--model-path", type=str, help="训练好的模型权重路径",
-                        default="/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result/model/model1.pth")
+                        default="/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result/model/model1.pth")
     parser.add_argument("--img-folder", type=str, help="验证集图像目录",
                         default="/home/lishengjie/data/COCO2017/val2017")
     parser.add_argument("--ann-file", type=str, help="COCO标注文件路径",
                         default="/home/lishengjie/data/COCO2017/annotations/instances_val2017.json")
     parser.add_argument("--save-dir", type=str, help="可视化结果保存目录",
-                        default="/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result/result_pngs/one")
+                        default="/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result/result_pngs/one")
     parser.add_argument("--indices", type=str, default="594", 
                         help="图像索引，可用逗号分隔输入多个，例如：594,1813,3724")
     parser.add_argument("--score-thresh", type=float, default=0.5, help="置信度阈值，低于此值不显示")

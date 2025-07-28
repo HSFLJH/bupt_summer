@@ -14,7 +14,7 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 # torchvision版本：
 
 ```bash
-cd /home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision
+cd /home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision
 ```
 
 训练：直接点击右上角运行，或者进入对应目录:
@@ -26,7 +26,7 @@ python train.py
 可视化数据：
 
 ```bash
-/home/lishengjie/miniconda3/envs/mask_rcnn/bin/tensorboard --logdir=/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/three/tensorboard/ --port=9999
+/home/lishengjie/miniconda3/envs/mask_rcnn/bin/tensorboard --logdir=/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/result/three/tensorboard/ --port=9999
 ```
 
 可视化结果：进入对应的文件夹torchvision/，然后：
@@ -38,7 +38,7 @@ python demo.py
 # pytorch版本：
 
 ```bash
-cd /home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch
+cd /home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch
 ```
 
 训练： 
@@ -62,5 +62,5 @@ python main.py --demo
 训练数据预览：
 
 ```bash
-/home/lishengjie/miniconda3/envs/mask_rcnn/bin/tensorboard --logdir=/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result/one/tensorboard/ --port=9999
+/home/lishengjie/miniconda3/envs/mask_rcnn/bin/tensorboard --logdir=/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result/one/tensorboard/ --port=9999
 ```

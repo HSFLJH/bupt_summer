@@ -22,13 +22,13 @@ Traceback (most recent call last):
     _run_code(code, mod_globals, init_globals, mod_name, mod_spec, pkg_name, script_name)
   File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 118, in _run_code
     exec(code, run_globals)
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
     main(args)
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 166, in main
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/train.py", line 166, in main
     dataset = CocoInstanceDataset(
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in __init__
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in __init__
     self.ids = [img_id for img_id in self.ids if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in <listcomp>
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 31, in <listcomp>
     self.ids = [img_id for img_id in self.ids if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
   File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/pycocotools/coco.py", line 143, in getAnnIds
     lists = [self.imgToAnns[imgId] for imgId in imgIds if imgId in self.imgToAnns]

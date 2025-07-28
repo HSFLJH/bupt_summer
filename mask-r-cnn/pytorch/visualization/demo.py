@@ -24,12 +24,12 @@ from model.model_build import get_model_mask_r_cnn
 # ========= 参数设置 =========
 data_root = "/home/lishengjie/data/COCO2017/val2017"
 ann_file = "/home/lishengjie/data/COCO2017/annotations/instances_val2017.json"
-model_path = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result/model/model1.pth"
+model_path = "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result/model/model1.pth"
 num_classes = 90 + 1  # COCO class + background
 
 # 创建日期格式的输出目录
 current_date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-base_output_dir = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result/result_pngs/seq"
+base_output_dir = "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/pytorch/result/result_pngs/seq"
 date_dir = os.path.join(base_output_dir, current_date)
 os.makedirs(date_dir, exist_ok=True)
 

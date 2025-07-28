@@ -114,8 +114,8 @@ def plot_combined_metrics(ea, tags, title, output_path):
 
 if __name__ == "__main__":
     # --- 1. 参数配置 ---
-    log_dir = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/three/tensorboard"  # 日志目录
-    output_dir = "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/three/train_pngs" # 保存路径
+    log_dir = "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/result/three/tensorboard"  # 日志目录
+    output_dir = "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/result/three/train_pngs" # 保存路径
 
     # 如果输出目录已存在，可以选择清空它，避免旧图片干扰
     if os.path.exists(output_dir):

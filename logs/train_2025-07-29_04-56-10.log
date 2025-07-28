@@ -3,11 +3,11 @@
 ========== 数据加载开始 ==========
 loading annotations into memory...
 Traceback (most recent call last):
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
     main(args)
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 166, in main
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/train.py", line 166, in main
     dataset = CocoInstanceDataset(
-  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 28, in __init__
+  File "/home/lishengjie/study/sum_hansf/bupt_summer/mask-r-cnn/torchvision/dataset_coco.py", line 28, in __init__
     super(CocoInstanceDataset, self).__init__(img_folder, ann_file)
   File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torchvision/datasets/coco.py", line 36, in __init__
     self.coco = COCO(annFile)
