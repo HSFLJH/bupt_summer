@@ -1,0 +1,88 @@
+使用GPU训练: NVIDIA A40
+模型将保存到: ./result/maskrcnn_2025-07-28_02-56-06
+========== 数据加载开始 ==========
+loading annotations into memory...
+Done (t=11.74s)
+creating index...
+index created!
+训练集大小: 117266 张图像
+loading annotations into memory...
+Done (t=0.40s)
+creating index...
+index created!
+验证集大小: 4952 张图像
+========== 模型构建开始 ==========
+/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=MaskRCNN_ResNet50_FPN_Weights.COCO_V1`. You can also use `weights=MaskRCNN_ResNet50_FPN_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+模型类别数: 91
+========== 优化器设置开始 ==========
+初始学习率: 0.005
+学习率调度: 在epoch [3, 4] 时衰减为 0.1 倍
+========== 开始训练 ==========
+训练参数:
+  - 批次大小: 6
+  - 训练轮数: 1
+  - 设备: cuda
+  - 输出目录: ./result/maskrcnn_2025-07-28_02-56-06
+
+========== Epoch 1/1 ==========
+CUDA_VISIBLE_DEVICES = 3
+Epoch: [0]:   0%|                                                         | 0/19545 [00:00<?, ?it/s]Epoch: [0]:   0%|                               | 0/19545 [00:04<?, ?it/s, loss=6.5897, lr=0.000010]Epoch: [0]:   0%|                    | 1/19545 [00:04<23:02:01,  4.24s/it, loss=6.5897, lr=0.000010]Epoch: [0]  [    0/19545]  eta: 23:02:18  lr: 0.000010  loss: 6.5897 (6.5897)  loss_classifier: 4.9584 (4.9584)  loss_box_reg: 0.7843 (0.7843)  loss_mask: 0.8337 (0.8337)  loss_objectness: 0.0034 (0.0034)  loss_rpn_box_reg: 0.0099 (0.0099)  time: 4.2434  data: 0.7643  max mem: 9853
+Epoch: [0]:   0%|                    | 1/19545 [00:04<23:02:01,  4.24s/it, loss=6.3630, lr=0.000015]Epoch: [0]:   0%|                    | 2/19545 [00:04<11:04:36,  2.04s/it, loss=6.3630, lr=0.000015]Epoch: [0]:   0%|                    | 2/19545 [00:05<11:04:36,  2.04s/it, loss=6.6800, lr=0.000020]Epoch: [0]:   0%|                     | 3/19545 [00:05<7:44:03,  1.42s/it, loss=6.6800, lr=0.000020]Epoch: [0]:   0%|                     | 3/19545 [00:06<7:44:03,  1.42s/it, loss=6.3136, lr=0.000025]Epoch: [0]:   0%|                     | 4/19545 [00:06<6:01:29,  1.11s/it, loss=6.3136, lr=0.000025]Epoch: [0]:   0%|                     | 4/19545 [00:06<6:01:29,  1.11s/it, loss=6.8275, lr=0.000030]Epoch: [0]:   0%|                     | 5/19545 [00:06<5:12:23,  1.04it/s, loss=6.8275, lr=0.000030]Epoch: [0]:   0%|                     | 5/19545 [00:07<5:12:23,  1.04it/s, loss=6.5862, lr=0.000035]Epoch: [0]:   0%|                     | 6/19545 [00:07<4:40:15,  1.16it/s, loss=6.5862, lr=0.000035]Epoch: [0]:   0%|                     | 6/19545 [00:07<4:40:15,  1.16it/s, loss=6.6432, lr=0.000040]Epoch: [0]:   0%|                     | 7/19545 [00:07<4:02:12,  1.34it/s, loss=6.6432, lr=0.000040]Epoch: [0]:   0%|                     | 7/19545 [00:08<4:02:12,  1.34it/s, loss=6.5189, lr=0.000045]Epoch: [0]:   0%|                     | 8/19545 [00:08<3:49:12,  1.42it/s, loss=6.5189, lr=0.000045]Epoch: [0]:   0%|                     | 8/19545 [00:09<3:49:12,  1.42it/s, loss=6.1335, lr=0.000050]Epoch: [0]:   0%|                     | 9/19545 [00:09<3:35:51,  1.51it/s, loss=6.1335, lr=0.000050]Epoch: [0]:   0%|                     | 9/19545 [00:09<3:35:51,  1.51it/s, loss=5.9433, lr=0.000055]Epoch: [0]:   0%|                    | 10/19545 [00:09<3:26:41,  1.58it/s, loss=5.9433, lr=0.000055]Epoch: [0]:   0%|                    | 10/19545 [00:10<3:26:41,  1.58it/s, loss=6.1860, lr=0.000060]Epoch: [0]:   0%|                    | 11/19545 [00:10<3:12:25,  1.69it/s, loss=6.1860, lr=0.000060]Epoch: [0]  [   10/19545]  eta: 5:01:16  lr: 0.000060  loss: 6.5189 (6.4350)  loss_classifier: 4.9558 (4.9138)  loss_box_reg: 0.6535 (0.6195)  loss_mask: 0.8259 (0.8281)  loss_objectness: 0.0153 (0.0160)  loss_rpn_box_reg: 0.0558 (0.0576)  time: 0.9253  data: 0.0698  max mem: 10887
+Epoch: [0]:   0%|                    | 11/19545 [00:10<3:12:25,  1.69it/s, loss=6.3628, lr=0.000065]Epoch: [0]:   0%|                    | 12/19545 [00:10<3:23:39,  1.60it/s, loss=6.3628, lr=0.000065]Epoch: [0]:   0%|                    | 12/19545 [00:11<3:23:39,  1.60it/s, loss=6.3578, lr=0.000070]Epoch: [0]:   0%|                    | 13/19545 [00:11<3:31:23,  1.54it/s, loss=6.3578, lr=0.000070]Epoch: [0]:   0%|                    | 13/19545 [00:12<3:31:23,  1.54it/s, loss=5.8224, lr=0.000075]Epoch: [0]:   0%|                    | 14/19545 [00:12<3:25:02,  1.59it/s, loss=5.8224, lr=0.000075]Epoch: [0]:   0%|                    | 14/19545 [00:12<3:25:02,  1.59it/s, loss=5.9582, lr=0.000080]Epoch: [0]:   0%|                    | 15/19545 [00:12<3:11:58,  1.70it/s, loss=5.9582, lr=0.000080]Epoch: [0]:   0%|                    | 15/19545 [00:13<3:11:58,  1.70it/s, loss=5.7853, lr=0.000085]Epoch: [0]:   0%|                    | 16/19545 [00:13<3:03:34,  1.77it/s, loss=5.7853, lr=0.000085]Epoch: [0]:   0%|                    | 16/19545 [00:13<3:03:34,  1.77it/s, loss=5.9011, lr=0.000090]Epoch: [0]:   0%|                    | 17/19545 [00:13<3:14:05,  1.68it/s, loss=5.9011, lr=0.000090]Epoch: [0]:   0%|                    | 17/19545 [00:14<3:14:05,  1.68it/s, loss=5.2367, lr=0.000095]Epoch: [0]:   0%|                    | 18/19545 [00:14<3:13:37,  1.68it/s, loss=5.2367, lr=0.000095]Epoch: [0]:   0%|                    | 18/19545 [00:15<3:13:37,  1.68it/s, loss=5.1895, lr=0.000100]Epoch: [0]:   0%|                    | 19/19545 [00:15<3:14:21,  1.67it/s, loss=5.1895, lr=0.000100]Epoch: [0]:   0%|                    | 19/19545 [00:15<3:14:21,  1.67it/s, loss=4.8568, lr=0.000105]Epoch: [0]:   0%|                    | 20/19545 [00:15<3:17:47,  1.65it/s, loss=4.8568, lr=0.000105]Epoch: [0]:   0%|                    | 20/19545 [00:15<4:19:21,  1.25it/s, loss=4.8568, lr=0.000105]
+Traceback (most recent call last):
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/__main__.py", line 71, in <module>
+    cli.main()
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 501, in main
+    run()
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 351, in run_file
+    runpy.run_path(target, run_name="__main__")
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 310, in run_path
+    return _run_module_code(code, init_globals, run_name, pkg_name=pkg_name, script_name=fname)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 127, in _run_module_code
+    _run_code(code, mod_globals, init_globals, mod_name, mod_spec, pkg_name, script_name)
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 118, in _run_code
+    exec(code, run_globals)
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 316, in <module>
+    main(args)
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/train.py", line 263, in main
+    train_one_epoch(
+  File "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/engine.py", line 90, in train_one_epoch
+    losses.backward()
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torch/_tensor.py", line 488, in backward
+    torch.autograd.backward(
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torch/autograd/__init__.py", line 197, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
+Exception ignored in: <module 'threading' from '/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py'>
+Traceback (most recent call last):
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 1567, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Exception ignored in atexit callback: <function _exit_function at 0x7f17e62b12d0>
+Traceback (most recent call last):
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/multiprocessing/util.py", line 357, in _exit_function
+    p.join()
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/multiprocessing/popen_fork.py", line 43, in wait
+    return self.poll(os.WNOHANG if timeout == 0.0 else 0)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/multiprocessing/popen_fork.py", line 27, in poll
+    pid, sts = os.waitpid(self.pid, flag)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/site-packages/torch/utils/data/_utils/signal_handling.py", line 66, in handler
+    _error_if_any_worker_fails()
+RuntimeError: DataLoader worker (pid 3490100) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Traceback (most recent call last):
+  File "/home/lishengjie/.cursor-server/extensions/ms-python.debugpy-2025.8.0-linux-x64/bundled/libs/debugpy/_vendored/pydevd/pydevd.py", line 2461, in __wait_for_threads_to_finish
+    self._wait_for_threads_to_finish_called_event.wait(timeout=timeout)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 607, in wait
+    signaled = self._cond.wait(timeout)
+  File "/home/lishengjie/miniconda3/envs/mask_rcnn/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt

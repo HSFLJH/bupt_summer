@@ -1,5 +1,5 @@
 """
-Mask R-CNN主程序入口
+Mask R-CNN主程序入口  
 """
 
 import os
@@ -8,8 +8,15 @@ import yaml
 import torch
 import random
 import numpy as np
+import time
+import datetime
+from torch.utils.tensorboard import SummaryWriter
+
 from dataset.coco_dataset import create_coco_dataloader
 from visualization.dataset_visualize import preview_augmentations
+from model.model_build import get_model_mask_r_cnn
+from train.train import train_one_epoch
+from train.evaluate import evaluate
 
 
 def parse_args():
@@ -23,13 +30,13 @@ def parse_args():
                         help='配置文件路径')
     
     # 模式选择
-    parser.add_argument('--train', action='store_true',
+    parser.add_argument('--train', action='store_true', default=True,
                         help='训练模式')
-    parser.add_argument('--eval', action='store_true',
+    parser.add_argument('--eval', action='store_true', default=False,
                         help='评估模式')
     
     # 数据增强预览
-    parser.add_argument('--augmentation-preview', action='store_true', default=True,
+    parser.add_argument('--augmentation-preview', action='store_true', default=False,
                         help='预览数据增强效果')
     parser.add_argument('--num-preview-samples', type=int, default=5,
                         help='预览的样本数量')
@@ -37,8 +44,6 @@ def parse_args():
                         help='指定要预览的样本索引，用逗号分隔，例如"1,2,3"。如果提供此参数，则忽略num-preview-samples')
     parser.add_argument('--show-annotations', action='store_true', default=True,
                         help='是否显示标注（边界框和掩码）')
-    parser.add_argument('--augmentation-level', type=int, default=1, choices=[1, 2, 3, 4],
-                        help='数据增强级别 (0-4): 0=无, 1=基础（实例分割推荐）, 2=默认, 3=较强, 4=最强')
     
     # 路径
     parser.add_argument('--output-dir', type=str, default='output',
@@ -47,8 +52,6 @@ def parse_args():
                         help='恢复训练的检查点路径')
     
     # 其他参数
-    parser.add_argument('--seed', type=int, default=42,
-                        help='随机种子')
     parser.add_argument('--workers', type=int, default=None,
                         help='数据加载器工作进程数，覆盖配置文件中的设置')
     parser.add_argument('--batch-size', type=int, default=None,
@@ -78,49 +81,10 @@ def setup_config(args):
     if args.batch_size is not None:
         config['training']['batch_size'] = args.batch_size
     
-    # 数据增强级别
-    if args.augmentation_level is not None:
-        config['transforms']['augmentation_level'] = args.augmentation_level
-        print(f"使用数据增强级别: {args.augmentation_level}")
-    
     # 确保输出目录存在
     os.makedirs(args.output_dir, exist_ok=True)
     
     return config
-
-
-def setup_environment(args, config):
-    """
-    设置环境，包括随机种子、CUDA等
-    
-    Args:
-        args: 命令行参数
-        config: 配置字典
-    """
-    # 设置随机种子
-    seed = args.seed
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    
-    # 设置CUDA环境
-    if config['device']['use_cuda'] and torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        # 如果指定了可见设备
-        if 'cuda_visible_devices' in config['device']:
-            os.environ["CUDA_VISIBLE_DEVICES"] = config['device']['cuda_visible_devices']
-        
-        # 确保CUDA运算是确定性的
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-        
-        device = torch.device("cuda")
-        print(f"使用CUDA: {torch.cuda.get_device_name(0)}")
-    else:
-        device = torch.device("cpu")
-        print("使用CPU")
-    
-    return device
 
 
 def main():
@@ -133,8 +97,19 @@ def main():
     # 加载配置
     config = setup_config(args)
     
-    # 设置环境
-    device = setup_environment(args, config)
+    # 强制使用CUDA，不再需要setup_environment函数和随机种子
+    if not torch.cuda.is_available():
+        raise RuntimeError("错误: 此项目强制要求使用CUDA，但未检测到可用GPU。")
+
+    if 'cuda_visible_devices' in config['device']:
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['device']['cuda_visible_devices']
+        print(f"设置可见GPU: {config['device']['cuda_visible_devices']}")
+
+    # 开启CUDNN性能基准测试以提升速度
+    torch.backends.cudnn.benchmark = True
+    
+    device = torch.device("cuda")
+    print(f"强制使用CUDA: {torch.cuda.get_device_name(0)}")
     
     # 加载数据集
     train_dataset, train_loader = create_coco_dataloader(config, train=True)
@@ -163,12 +138,119 @@ def main():
         )
         return
     
-    # TODO: 加载模型、优化器等
-    # TODO: 训练或评估模型
+    # ==================== 【模型构建】 ====================
+    print("========== 模型构建开始 ==========")
+    model = get_model_mask_r_cnn(config)
+    model.to(device)
+    print(f"模型类别数: {config['model']['num_classes']}")
+
+    # ==================== 【优化器与学习率调度】 ====================
+    print("========== 优化器设置开始 ==========")
+    # 优化器设置：只优化需要梯度的参数
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(
+        params,
+        lr=config['training']['lr'],
+        momentum=config['training']['momentum'],
+        weight_decay=config['training']['weight_decay']
+    )
+
+    # 学习率调度器
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer,
+        milestones=config['training']['lr_milestones'],
+        gamma=config['training']['lr_gamma']
+    )
+    print(f"初始学习率: {config['training']['lr']}")
+    print(f"学习率调度: 在epoch {config['training']['lr_milestones']} 时衰减为 {config['training']['lr_gamma']} 倍")
+
+    # ==================== 【模型恢复】 ====================
+    start_epoch = 0
+    if args.resume:
+        if os.path.isfile(args.resume):
+            print(f"加载模型权重: {args.resume}")
+            checkpoint = torch.load(args.resume, map_location=device)
+            model.load_state_dict(checkpoint['model'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+            start_epoch = checkpoint['epoch'] + 1
+        else:
+            print(f"警告: 无法找到模型文件 {args.resume}")
     
-    print("暂未实现模型训练和评估部分。")
+    # ==================== 【输出目录和日志】 ====================
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_dir = os.path.join(args.output_dir, f"maskrcnn_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    writer = SummaryWriter(log_dir=os.path.join(output_dir, "tensorboard"))
+    print(f"模型和日志将保存到: {output_dir}")
 
+    # ==================== 【仅评估模式】 ====================
+    if args.eval:
+        print("========== 仅评估模式 ==========")
+        if not args.resume:
+            print("错误: 评估模式需要通过 --resume 指定模型路径")
+            return
+        evaluate(model, val_loader, device=device)
+        return
 
+    # ==================== 【训练循环】 ====================
+    if args.train:
+        print("========== 开始训练 ==========")
+        print(f"训练参数:")
+        print(f"  - 批次大小: {config['training']['batch_size']}")
+        print(f"  - 训练轮数: {config['training']['epochs']}")
+        print(f"  - 设备: {device}")
+        print(f"  - 输出目录: {output_dir}")
+        
+        start_time = time.time()
+        
+        for epoch in range(start_epoch, config['training']['epochs']):
+            print(f"\n========== Epoch {epoch+1}/{config['training']['epochs']} ==========")
+            
+            # 训练一个epoch
+            train_one_epoch(model, optimizer, train_loader, device, epoch, config['training']['print_freq'], writer=writer)
+            
+            # 更新学习率
+            lr_scheduler.step()
+            
+            # 在验证集上评估
+            evaluator = evaluate(model, val_loader, device=device)
+
+            # 将评估结果写入TensorBoard
+            if writer and evaluator and evaluator.coco_eval:
+                if "bbox" in evaluator.coco_eval:
+                    stats = evaluator.coco_eval["bbox"].stats
+                    writer.add_scalar("Val/bbox_mAP", stats[0], epoch)
+                    writer.add_scalar("Val/bbox_mAP50", stats[1], epoch)
+                    writer.add_scalar("Val/bbox_mAP75", stats[2], epoch)
+
+                if "segm" in evaluator.coco_eval:
+                    stats = evaluator.coco_eval["segm"].stats
+                    writer.add_scalar("Val/mask_mAP", stats[0], epoch)
+                    writer.add_scalar("Val/mask_mAP50", stats[1], epoch)
+                    writer.add_scalar("Val/mask_mAP75", stats[2], epoch)
+
+            # 保存检查点
+            if (epoch + 1) % config['training']['save_freq'] == 0:
+                checkpoint_path = os.path.join(output_dir, f"checkpoint_epoch_{epoch+1}.pth")
+                torch.save({
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': lr_scheduler.state_dict(),
+                    'epoch': epoch,
+                    'args': args,
+                    'config': config
+                }, checkpoint_path)
+                print(f"检查点已保存: {checkpoint_path}")
+
+        # 训练结束
+        total_time = time.time() - start_time
+        print(f"\n========== 训练完成！ ==========")
+        print(f"总用时: {str(datetime.timedelta(seconds=int(total_time)))}")
+        print(f"最终模型和日志保存在: {output_dir}")
+    
+    writer.close()
+    
 if __name__ == "__main__":
     """
     collate_fn函数解释：

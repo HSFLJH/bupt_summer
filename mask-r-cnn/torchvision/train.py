@@ -84,13 +84,13 @@ def parse_args():
     
     # ==================== 【模型相关参数】 ====================
     parser.add_argument('--num-classes', default=91, type=int,
-                       help='类别数量（包括背景类） (默认: 2)')
+                       help='类别数量（包括背景类） (默认:91)')
     parser.add_argument('--pretrained', action='store_true', default=True,
                        help='是否使用预训练权重 (默认: True)')
     
     # ==================== 【训练相关参数】 ====================
     parser.add_argument('--batch-size', default=6, type=int,
-                       help='批次大小 (默认: 4)')
+                       help='批次大小 (默认: 6)')
     parser.add_argument('--epochs', default=1, type=int,
                        help='训练轮数 (默认: 3)')
     parser.add_argument('--lr', default=0.005, type=float,
@@ -137,7 +137,7 @@ def main(args):
     2. 加载数据集
     3. 构建模型
     4. 设置优化器和学习率调度
-    5. 执行训练循环
+    5. 执行训练循环+验证
     """
 
     # ==================== 【参数设置】 ====================
@@ -205,7 +205,7 @@ def main(args):
 
     # ==================== 【模型构建】 ====================
     print("========== 模型构建开始 ==========")
-    model = get_instance_segmentation_model(num_classes=args.num_classes)
+    model = get_instance_segmentation_model(num_classes=args.num_classes) # !!!!!!!
     model.to(device)  # 将模型移动到GPU/CPU
     print(f"模型类别数: {args.num_classes}")
     

@@ -17,7 +17,7 @@ import torchvision.transforms.functional as F
 from transforms.mask_rcnn_transforms import (
     LargeScaleJitter, RandomHorizontalFlip, ColorJitterTransform,
     RandomGrayscale, SmallRotation, SafeRandomCrop, Normalize,
-    ToTensor, Resize, MotionBlur, RandomPerspective
+    Resize, MotionBlur, RandomPerspective
 )
 
 

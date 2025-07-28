@@ -11,6 +11,7 @@ dataset:
 # ====================== 模型 ======================
 model:
   backbone: "resnet50"  # 主干网络
+  num_classes: 91
   fpn_out_channels: 256  # FPN输出通道数
   roi_pool_size: 7  # ROI池化尺寸
   mask_pool_size: 14  # 掩码池化尺寸
@@ -20,14 +21,15 @@ model:
 # ====================== 训练 ======================
 training:
   batch_size: 2
-  lr: 0.005
+  workers: 4
+  lr: 0.0005
   momentum: 0.9
-  weight_decay: 0.0001
-  lr_scheduler: "step"  # 学习率调度器类型: step, cosine, warmup
-  lr_steps: [8, 11]  # 学习率下降步数
-  lr_gamma: 0.1  # 学习率下降系数
-  epochs: 12
-  workers: 4  # 数据加载器工作进程数
+  weight_decay: 0.0005
+  lr_milestones: [16, 22]
+  lr_gamma: 0.1
+  epochs: 3
+  print_freq: 20
+  save_freq: 5  # 每 5 个 epoch 保存一次模型
   optimizer: "sgd"  # 优化器: sgd, adam
   aspect_ratio_group_factor: 3  # 宽高比分组因子，用于减少填充
 
@@ -106,7 +108,7 @@ inference:
 
 device:
   use_cuda: true  # 是否使用CUDA
-  cuda_visible_devices: "0"  # 可见CUDA设备
+  cuda_visible_devices: "3"  # 可见CUDA设备
 
 visualization:
   enabled: true  # 是否启用可视化

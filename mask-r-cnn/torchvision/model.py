@@ -21,8 +21,7 @@ def get_instance_segmentation_model(num_classes):
     """
     # 【基础模型加载】加载预训练的Mask R-CNN模型
     # pretrained=True: 使用在COCO数据集上预训练的权重
-    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True,
-        num_classes = num_classes)
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True, num_classes = num_classes)
 
     # 【分类头替换】替换ROI分类器以适应自定义类别数
     # 获取分类器的输入特征维度

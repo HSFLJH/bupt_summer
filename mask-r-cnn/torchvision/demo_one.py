@@ -40,8 +40,8 @@ def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, sco
     labels = prediction['labels']
     scores = prediction['scores']
     num_instances = len(masks)
-    colors = plt.get_cmap('hsv', num_instances)
-
+    colors = plt.get_cmap('hsv', num_instances)#使用 HSV 颜色映射为每个实例分配不同颜色
+    #置信度过滤
     for i in range(num_instances):
         score = scores[i].item()
         if score < score_threshold:

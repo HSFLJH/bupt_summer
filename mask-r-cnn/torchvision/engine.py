@@ -55,7 +55,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
             images = list(image.to(device) for image in images)
             # 把所有目标（标注）也移动到设备
             targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
-            # 自动混合精度训练（节省显存，加速）
+            # 自动混合精度训练AMP（节省显存，加速）
             with torch.cuda.amp.autocast(enabled=scaler is not None):
                 # 前向传播，计算损失字典
                 loss_dict = model(images, targets)
