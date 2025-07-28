@@ -295,8 +295,8 @@ def preview_augmentations(dataset, num_samples, config, sample_indices=None, sho
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start()
     
-    # 获取数据增强级别
-    aug_level = config['transforms'].get('augmentation_level', 2)
+    # 获取数据增强级别,演示的时候设置为4
+    aug_level = 4
     
     # 打印数据增强级别信息
     print(f"数据增强级别: {aug_level}")
