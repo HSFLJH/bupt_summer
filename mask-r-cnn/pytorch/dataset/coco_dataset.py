@@ -67,13 +67,13 @@ class COCODataset(Dataset):
         anns = coco.loadAnns(ann_ids)  # 加载所有标注信息
         img_info = coco.loadImgs(img_id)[0]  # 加载图像信息
         path = img_info['file_name']  # 获取图像文件名
-
+        #1.传入index
         # 使用 PIL 加载图像，并且转化为tensor
         img_path = os.path.join(self.root, path)  # 构建完整的图像路径
         img = Image.open(img_path).convert('RGB')  # 打开图像并转换为RGB模式
         img = F.pil_to_tensor(img).float() / 255.0  # 将PIL图像转换为张量并归一化
 
-        # 获取原始尺寸（从 COCO 元数据）
+        # 2.获取原始尺寸（从 COCO 元数据）
         width = img_info['width']  # 获取图像宽度
         height = img_info['height']  # 获取图像高度
 
@@ -82,7 +82,7 @@ class COCODataset(Dataset):
         masks = []  # 初始化掩码列表
         iscrowd = []  # 初始化是否为群体标志列表
         area = []  # 初始化区域面积列表
-
+        #3.遍历所有标注,获取标注信息
         for ann in anns:  # 遍历所有标注
             if ann.get('iscrowd', 0):  # 跳过群体标注
                 continue

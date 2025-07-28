@@ -22,8 +22,9 @@ def load_category_names(ann_file):
 
 def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, score_threshold=0.5):
     """
-    可视化预测结果：显示边框、标签、mask
+    可视化预测结果:显示边框、标签、mask
     """
+    #图像与处理
     plt.figure(figsize=(10, 10), facecolor='black')
 
     # 1. 准备好要显示的底层图片 (H, W, C)
@@ -34,7 +35,7 @@ def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, sco
     # 2. 创建一个空白的、和原图一样大的图层，用来画所有的 masks
     # 这个图层将一次性地叠加在原图上
     masks_overlay = np.zeros_like(img_to_show)
-
+    
     masks = prediction['masks']
     boxes = prediction['boxes']
     labels = prediction['labels']
@@ -57,9 +58,10 @@ def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, sco
         box = boxes[i].cpu().numpy()
         label_id = labels[i].item()
         label_name = id_to_name.get(label_id, str(label_id))
-
+        # 绘制边框
         ax.add_patch(patches.Rectangle((box[0], box[1]), box[2]-box[0], box[3]-box[1],
                                       linewidth=2, edgecolor=color, facecolor='none'))
+        #在边界框上方显示类别名称和置信度分数
         ax.text(box[0], box[1] - 5, f'{label_name}: {score:.2f}', fontsize=10,
                 bbox=dict(facecolor=color, alpha=0.8), color='white')
 
@@ -78,6 +80,7 @@ def visualize_prediction(img_tensor, prediction, id_to_name, save_path=None, sco
     else:
         plt.show()
 
+#推理与可视化
 def run_inference(model_path, img_folder, ann_file, img_indices, save_dir, score_threshold=0.5):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -99,7 +102,7 @@ def run_inference(model_path, img_folder, ann_file, img_indices, save_dir, score
     )
 
     os.makedirs(save_dir, exist_ok=True)
-
+    #批量推理与可视化
     for idx in img_indices:
         img, _ = dataset[idx]
         with torch.no_grad():
@@ -134,7 +137,7 @@ def main():
     parser.add_argument("--save-dir", type=str, help="可视化结果保存目录",
                         default="/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/torchvision/result/result_pngs/one")
     parser.add_argument("--indices", type=str, default="594", 
-                        help="图像索引，可用逗号分隔输入多个，例如：594,1813,3724")
+                        help="图像索引,可用逗号分隔输入多个,例如:594,1813,3724")
     parser.add_argument("--score-thresh", type=float, default=0.5, help="置信度阈值，低于此值不显示")
 
     args = parser.parse_args()

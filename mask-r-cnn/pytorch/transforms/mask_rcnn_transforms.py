@@ -61,7 +61,7 @@ class LargeScaleJitter:
 class RandomHorizontalFlip(T.RandomHorizontalFlip):
     """
     随机水平翻转。
-    继承自 torchvision 的 RandomHorizontalFlip，并重写了 `forward` 方法，
+    继承自 torchvision 的 RandomHorizontalFlip,并重写了 `forward` 方法，
     使其能够同时处理图像和对应的标注信息（边界框和掩码）。
     """
     def forward(self, image: Tensor, target: Optional[Dict[str, Tensor]] = None) -> Tuple[Tensor, Optional[Dict[str, Tensor]]]:
@@ -141,8 +141,8 @@ class Normalize:
         """
         初始化方法。
         Args:
-            mean (Tuple): 图像各通道的均值，通常使用ImageNet数据集的统计值。
-            std (Tuple): 图像各通道的标准差，通常使用ImageNet数据集的统计值。
+            mean (Tuple): 图像各通道的均值,通常使用ImageNet数据集的统计值。
+            std (Tuple): 图像各通道的标准差,通常使用ImageNet数据集的统计值。
         """
         self.mean = mean
         self.std = std
@@ -155,7 +155,7 @@ class Resize:
     """
     调整图像尺寸。
     将图像的短边缩放到 `min_size`，同时确保长边不超过 `max_size`，并保持图像的原始长宽比。
-    这在目标检测模型（如Faster R-CNN, Mask R-CNN）中是标准的预处理步骤。
+    这在目标检测模型(如Faster R-CNN, Mask R-CNN)中是标准的预处理步骤。
     """
     def __init__(self, min_size: int = 800, max_size: int = 1333):
         """
@@ -557,15 +557,15 @@ def build_mask_rcnn_transforms(train: bool = True, min_size: int = 800, max_size
     这个函数非常灵活，可以根据是否是训练阶段以及所需的数据增强强度，来组合不同的变换。
     
     Args:
-        train (bool): 如果为 True，则构建包含数据增强的训练流水线。
-                      如果为 False，则只构建包含必要预处理（如Resize和Normalize）的验证/测试流水线。
+        train (bool): 如果为 True,则构建包含数据增强的训练流水线。
+                      如果为 False,则只构建包含必要预处理(如Resize和Normalize)的验证/测试流水线。
         min_size (int): 调整尺寸后的图像短边最小尺寸。
         max_size (int): 调整尺寸后的图像长边最大尺寸。
         augmentation_level (int): 数据增强的级别 (1-4)。级别越高，增强越复杂、越强烈。
             - 1级: 基础增强，只有水平翻转。
-            - 2级: 中等增强，在1级基础上增加安全裁剪、小角度旋转和尺度抖动。这是默认级别。
-            - 3级: 较强增强，在2级基础上增加颜色抖动和随机灰度化。
-            - 4级: 最强增强，在3级基础上增加运动模糊和透视变换。
+            - 2级: 中等增强,在1级基础上增加安全裁剪、小角度旋转和尺度抖动。这是默认级别。
+            - 3级: 较强增强,在2级基础上增加颜色抖动和随机灰度化。
+            - 4级: 最强增强,在3级基础上增加运动模糊和透视变换。
     
     Returns:
         Compose: 一个包含了所选变换的 `Compose` 对象。

@@ -30,7 +30,7 @@ def parse_args():
                         help='配置文件路径')
     
     # 模式选择
-    parser.add_argument('--train', action='store_true', default=True,
+    parser.add_argument('--train', action='store_true', default=False,
                         help='训练模式')
     parser.add_argument('--eval', action='store_true', default=False,
                         help='评估模式')
@@ -45,14 +45,20 @@ def parse_args():
     parser.add_argument('--show-annotations', action='store_true', default=True,
                         help='是否显示标注（边界框和掩码）')
     
+    # 运行demo
+    parser.add_argument('--demo', action='store_true', default=False,
+                        help='运行demo')
+    parser.add_argument('--demo-one', action='store_true', default=False,
+                        help='运行demo_one')
+    
     # 路径
-    parser.add_argument('--output-dir', type=str, default='output',
+    parser.add_argument('--output-dir', type=str, default='/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/result',
                         help='输出目录')
     parser.add_argument('--resume', type=str, default='',
                         help='恢复训练的检查点路径')
     
     # 其他参数
-    parser.add_argument('--workers', type=int, default=None,
+    parser.add_argument('--workers', type=int, default=4,
                         help='数据加载器工作进程数，覆盖配置文件中的设置')
     parser.add_argument('--batch-size', type=int, default=None,
                         help='批处理大小，覆盖配置文件中的设置')
@@ -91,6 +97,9 @@ def main():
     """
     主函数
     """
+
+    # ============================== 读取配置文件 ==============================
+
     # 解析命令行参数
     args = parse_args()
     
@@ -100,16 +109,25 @@ def main():
     # 强制使用CUDA，不再需要setup_environment函数和随机种子
     if not torch.cuda.is_available():
         raise RuntimeError("错误: 此项目强制要求使用CUDA，但未检测到可用GPU。")
+    print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 
-    if 'cuda_visible_devices' in config['device']:
-        os.environ["CUDA_VISIBLE_DEVICES"] = config['device']['cuda_visible_devices']
-        print(f"设置可见GPU: {config['device']['cuda_visible_devices']}")
+    # export CUDA_VISIBLE_DEVICES=3
 
     # 开启CUDNN性能基准测试以提升速度
     torch.backends.cudnn.benchmark = True
     
     device = torch.device("cuda")
     print(f"强制使用CUDA: {torch.cuda.get_device_name(0)}")
+
+    # ============================== 运行demo ==============================
+    if args.demo:
+        from visualization.demo import main as demo_main
+        demo_main()
+    elif args.demo_one:
+        from visualization.demo_one import main as demo_one_main
+        demo_one_main()
+
+    # ============================== 加载数据集 ==============================
     
     # 加载数据集
     train_dataset, train_loader = create_coco_dataloader(config, train=True)
@@ -117,6 +135,8 @@ def main():
     
     print(f"训练集样本数: {len(train_dataset)}")
     print(f"验证集样本数: {len(val_dataset)}")
+
+    # ============================== 数据增强预览 ==============================
     
     # 如果是增强预览模式，则运行预览并退出
     if args.augmentation_preview:

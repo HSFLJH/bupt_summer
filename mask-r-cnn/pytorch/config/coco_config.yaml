@@ -20,7 +20,7 @@ model:
 
 # ====================== 训练 ======================
 training:
-  batch_size: 2
+  batch_size: 4
   workers: 4
   lr: 0.0005
   momentum: 0.9
@@ -95,7 +95,7 @@ transforms:
 # ====================== 日志 & 检查点 ======================
 logging:
   print_freq: 50
-  save_dir: "checkpoints/coco_maskrcnn"
+  save_dir: "/home/lishengjie/study/sum_jiahao/bupt_summer/mask-r-cnn/pytorch/output/checkpoints/coco_maskrcnn"
   save_freq: 1          # Save every n epochs
   eval_freq: 1          # Validate every n epochs
   use_tensorboard: true
