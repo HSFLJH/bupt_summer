@@ -45,7 +45,9 @@ def parse_args():
     parser.add_argument('--show-annotations', action='store_true', default=True,
                         help='是否显示标注（边界框和掩码）')
     
-    # 运行demo
+    # 训练数据可视化
+
+    # 运行demo，测试图片可视化
     parser.add_argument('--demo', action='store_true', default=False,
                         help='运行demo')
     parser.add_argument('--demo-one', action='store_true', default=False,

@@ -53,7 +53,7 @@ python main.py --train
 python main.py --augmentation-preview
 ```
 
-评估结果预览：
+预测结果预览：
 
 ```bash
 python main.py --demo

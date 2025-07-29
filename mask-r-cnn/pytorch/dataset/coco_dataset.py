@@ -12,7 +12,7 @@ from transforms.mask_rcnn_transforms import Compose, build_mask_rcnn_transforms 
 
 class COCODataset(Dataset):
     """
-    标准 COCO 格式数据集加载器，继承于torch.utils.data.Dataset。
+    标准 COCO 格式数据集加载器,继承于torch.utils.data.Dataset。
     主要用于加载COCO数据集，并进行数据增强。
     
     参数：
